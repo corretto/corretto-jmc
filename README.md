@@ -1,12 +1,6 @@
-## My Project
+## JMC for Corretto
 
-TODO: Fill this README out!
-
-Be sure to:
-
-* Change the title in this README
-* Edit your repository description on GitHub
-* Write in your license below and create a LICENSE file
+TODO
 
 ## Security
 
