@@ -1,0 +1,49 @@
+<!DOCTYPE html "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<style type="text/css">%1$s</style>
+	<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+	<!--[if lt IE 9]>
+		<script>%2$s</script>
+	<![endif]-->
+</head>
+
+<body onresize="resizeFlameGraph()">
+	<div id="chart"></div>
+	<script type="text/javascript">%3$s</script>
+	<script type="text/javascript">
+
+		var flameGraph;
+		var currentJson;
+
+		function processGraph(jsonObj) {
+			flameGraph = d3.flamegraph()
+				.width(windowSize() * 0.9)
+				.transitionDuration(500)
+				.transitionEase(d3.easeCubic)
+				.sort(true)
+				.title("");
+			currentJson = jsonObj;
+			d3.select("#chart")
+				.datum(currentJson)
+				.call(flameGraph);
+		}
+
+		function windowSize() {
+			return Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+		}
+
+		function resizeFlameGraph() {
+			if (flameGraph) {
+				flameGraph.width(windowSize() * 0.9);
+				d3.select("#chart")
+					.datum(currentJson)
+					.call(flameGraph);
+			}
+		}
+
+	</script>
+</body>
+</html>
