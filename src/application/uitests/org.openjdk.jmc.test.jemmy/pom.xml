@@ -36,7 +36,7 @@
 	<parent>
 		<groupId>org.openjdk.jmc</groupId>
 		<artifactId>missioncontrol.application.uitests</artifactId>
-		<version>7.1.1-SNAPSHOT</version>
+		<version>7.1.2-SNAPSHOT</version>
 	</parent>
 	<artifactId>org.openjdk.jmc.test.jemmy</artifactId>
 	<packaging>eclipse-plugin</packaging>
@@ -45,29 +45,29 @@
 		<dependency>
 			<groupId>org.openjdk.jmc</groupId>
 			<artifactId>common</artifactId>
-			<version>7.1.1-SNAPSHOT</version>
+			<version>7.1.2-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.openjdk.jmc</groupId>
 			<artifactId>common.test</artifactId>
-			<version>7.1.1-SNAPSHOT</version>
+			<version>7.1.2-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.openjdk.jmc</groupId>
 			<artifactId>flightrecorder</artifactId>
-			<version>7.1.1-SNAPSHOT</version>
+			<version>7.1.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.openjdk.jmc</groupId>
 			<artifactId>flightrecorder.rules</artifactId>
-			<version>7.1.1-SNAPSHOT</version>
+			<version>7.1.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.openjdk.jmc</groupId>
 			<artifactId>flightrecorder.rules.jdk</artifactId>
-			<version>7.1.1-SNAPSHOT</version>
+			<version>7.1.2-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 
