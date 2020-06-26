@@ -1,6 +1,13 @@
 ## JMC for Corretto
 
-TODO: Add project description and contribution guidance
+*JMC for Corretto* is a build of [JDK Mission Control (JMC)](https://openjdk.java.net/projects/jmc/) by the Corretto team. It tracks the latest stable JMC release with extra patches to support the usage of the JDK Flight Recorder feature in Corretto releases including:
+
+* Corretto 8.262.y.z or later
+* Corretto 11.0.x.y.z or later
+
+Check out the [JMC README.md](src/README.md) for more project details.
+
+To contribute to the JMC project in the OpenJDK community, please refer to the [OpenJDK JMC contribution wiki](https://wiki.openjdk.java.net/display/jmc/Contributing).
 
 ### Build JMC for Corretto
 
@@ -22,5 +29,5 @@ See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more inform
 
 ### License
 
-This library is licensed under the LICENSE NAME HERE License.
+This library is licensed under the Universal Permissive License, Version 1.0.
 
