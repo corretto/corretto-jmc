@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--   
+   Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+   
+   DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   
+   The contents of this file are subject to the terms of either the Universal Permissive License 
+   v 1.0 as shown at http://oss.oracle.com/licenses/upl
+   
+   or the following license:
+   
+   Redistribution and use in source and binary forms, with or without modification, are permitted
+   provided that the following conditions are met:
+   
+   1. Redistributions of source code must retain the above copyright notice, this list of conditions
+   and the following disclaimer.
+   
+   2. Redistributions in binary form must reproduce the above copyright notice, this list of
+   conditions and the following disclaimer in the documentation and/or other materials provided with
+   the distribution.
+   
+   3. Neither the name of the copyright holder nor the names of its contributors may be used to
+   endorse or promote products derived from this software without specific prior written permission.
+   
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+   IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+   FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+   DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+   WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.openjdk.jmc</groupId>
+	<artifactId>missioncontrol</artifactId>
+	<version>8.0.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>JDK Mission Control</name>
+	<description>JDK Mission Control is an advanced set of tools that enables 
+		efficient and detailed analysis of the extensive of data collected by 
+		JDK Flight Recorder. The tool chain enables developers and 
+		administrators to collect and analyze data from Java applications 
+		running locally or deployed in production environments.
+	</description>
+	<url>http://jdk.java.net/jmc</url>
+	<licenses>
+		<license>
+			<name>Universal Permissive License Version 1.0</name>
+			<url>http://oss.oracle.com/licenses/upl</url>
+			<distribution>repo</distribution>
+			<comments>Copyright (c) 2018, 2021, Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.</comments>
+		</license>
+	</licenses>
+	<organization>
+		<name>Oracle</name>
+		<url>https://www.oracle.com</url>
+	</organization>
+	<issueManagement>
+		<system>JIRA</system>
+		<url>https://bugs.openjdk.java.net/projects/JMC/issues</url>
+	</issueManagement>
+	<mailingLists>
+		<mailingList>
+			<name>jmc dev</name>
+			<subscribe>http://mail.openjdk.java.net/mailman/listinfo/jmc-dev</subscribe>
+			<unsubscribe>http://mail.openjdk.java.net/mailman/listinfo/jmc-dev</unsubscribe>
+			<archive>http://mail.openjdk.java.net/pipermail/jmc-dev/</archive>
+		</mailingList>
+	</mailingLists>
+	<modules>
+		<module>application</module>
+		<module>releng</module>
+	</modules>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<tycho.version>2.0.0</tycho.version>
+		<maven.buildnumber.version>1.4</maven.buildnumber.version>
+		<maven.deploy.version>2.8.2</maven.deploy.version>
+		<maven.directory.version>0.3.1</maven.directory.version>
+		<maven.enforcer.version>3.0.0-M1</maven.enforcer.version>
+		<maven.resources.version>3.2.0</maven.resources.version>
+		<spotless.version>2.5.0</spotless.version>
+		<spotless.config.path>${basedir}/configuration/ide/eclipse/formatting/formatting.xml</spotless.config.path>
+		<spotbugs.version>4.1.4</spotbugs.version>
+		<buildId>${user.name}</buildId>
+		<!-- The version of the JDK embedded. When not embedding a JDK (this is 
+			usually the case), leave this empty. If embedding a JDK, include a comma 
+			and space, e.g. <jdkVersion>, JDK 12.0.2</jdkVersion> -->
+		<jdkVersion></jdkVersion>
+		<!-- Critical Patch Update Id. Used in a release where _only_ the embedded
+			JDK has changed. Set to .[cpu sequence number], e.g. .1 -->
+		<patchId></patchId>
+		<scmConnection>scm:git:git://github.com/openjdk/jmc.git</scmConnection>
+	</properties>
+	<scm>
+		<connection>${scmConnection}</connection>
+	</scm>
+	<distributionManagement>
+		<repository>
+			<id>jmc-publish</id>
+			<url>${release.repo}</url>
+		</repository>
+		<snapshotRepository>
+			<id>jmc-publish-snapshot</id>
+			<url>${snapshot.repo}</url>
+		</snapshotRepository>
+	</distributionManagement>
+	<profiles>
+		<profile>
+			<id>2020-12</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>target-platform-configuration</artifactId>
+						<version>${tycho.version}</version>
+						<configuration>
+							<target>
+								<artifact>
+									<groupId>org.openjdk.jmc</groupId>
+									<artifactId>platform-definition-2020-12</artifactId>
+									<version>8.0.0-SNAPSHOT</version>
+								</artifact>
+							</target>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>2020-09</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>target-platform-configuration</artifactId>
+						<version>${tycho.version}</version>
+						<configuration>
+							<target>
+								<artifact>
+									<groupId>org.openjdk.jmc</groupId>
+									<artifactId>platform-definition-2020-09</artifactId>
+									<version>8.0.0-SNAPSHOT</version>
+								</artifact>
+							</target>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>2020-06</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>target-platform-configuration</artifactId>
+						<version>${tycho.version}</version>
+						<configuration>
+							<target>
+								<artifact>
+									<groupId>org.openjdk.jmc</groupId>
+									<artifactId>platform-definition-2020-06</artifactId>
+									<version>8.0.0-SNAPSHOT</version>
+								</artifact>
+							</target>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>2020-03</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>target-platform-configuration</artifactId>
+						<version>${tycho.version}</version>
+						<configuration>
+							<target>
+								<artifact>
+									<groupId>org.openjdk.jmc</groupId>
+									<artifactId>platform-definition-2020-03</artifactId>
+									<version>8.0.0-SNAPSHOT</version>
+								</artifact>
+							</target>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>${maven.deploy.version}</version>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>target-platform-configuration</artifactId>
+				<version>${tycho.version}</version>
+				<configuration>
+					<environments>
+						<environment>
+							<os>win32</os>
+							<ws>win32</ws>
+							<arch>x86_64</arch>
+						</environment>
+						<environment>
+							<os>linux</os>
+							<ws>gtk</ws>
+							<arch>x86_64</arch>
+						</environment>
+						<environment>
+							<os>macosx</os>
+							<ws>cocoa</ws>
+							<arch>x86_64</arch>
+						</environment>
+					</environments>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-maven-plugin</artifactId>
+				<version>${tycho.version}</version>
+				<extensions>true</extensions>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-compiler-plugin</artifactId>
+				<version>${tycho.version}</version>
+				<configuration>
+					<useProjectSettings>false</useProjectSettings>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-p2-repository-plugin</artifactId>
+				<version>${tycho.version}</version>
+				<configuration>
+					<includeAllDependencies>true</includeAllDependencies>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-packaging-plugin</artifactId>
+				<version>${tycho.version}</version>
+				<executions>
+					<execution>
+						<id>build-qualifier</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>build-qualifier</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Built-By />
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.commonjava.maven.plugins</groupId>
+				<artifactId>directory-maven-plugin</artifactId>
+				<version>${maven.directory.version}</version>
+				<executions>
+					<execution>
+						<id>directories</id>
+						<goals>
+							<goal>highest-basedir</goal>
+						</goals>
+						<phase>initialize</phase>
+						<configuration>
+							<property>rootDir</property>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.github.spotbugs</groupId>
+				<artifactId>spotbugs-maven-plugin</artifactId>
+				<version>${spotbugs.version}</version>
+				<configuration>
+					<effort>Max</effort>
+					<threshold>Low</threshold>
+					<excludeFilterFile>${rootDir}/configuration/spotbugs/spotbugs-exclude.xml</excludeFilterFile>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>buildnumber-maven-plugin</artifactId>
+				<version>${maven.buildnumber.version}</version>
+				<executions>
+					<execution>
+						<phase>initialize</phase>
+						<goals>
+							<goal>create</goal>
+						</goals>
+						<configuration>
+							<doCheck>false</doCheck>
+							<doUpdate>false</doUpdate>
+							<getRevisionOnlyOnce>true</getRevisionOnlyOnce>
+							<revisionOnScmFailure>no.scm.config.in.pom</revisionOnScmFailure>
+						</configuration>
+					</execution>
+					<execution>
+						<id>build.date</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>create-timestamp</goal>
+						</goals>
+						<configuration>
+							<timestampFormat>yyyy-MM-dd</timestampFormat>
+							<timestampPropertyName>build.date</timestampPropertyName>
+						</configuration>
+					</execution>
+					<!-- TODO: Maybe add the create-metadata goal after we've made the switch to Mercurial -->
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>${maven.enforcer.version}</version>
+				<executions>
+					<execution>
+						<id>enforce-java</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireJavaVersion>
+									<version>[11,)</version>
+									<message>Building JMC requires Java 11 or later</message>
+								</requireJavaVersion>
+							</rules>
+						</configuration>
+					</execution>
+					<execution>
+						<id>enforce-maven</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireMavenVersion>
+									<version>3.3.1</version>
+									<message>Building JMC requires at least Maven 3.3.1</message>
+								</requireMavenVersion>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>${spotless.version}</version>
+				<configuration>
+					<java>
+						<eclipse>
+							<file>${spotless.config.path}</file>
+							<version>4.8.0</version>
+						</eclipse>
+					</java>
+				</configuration>
+			</plugin>
+		</plugins>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>${maven.resources.version}</version>
+					<executions>
+						<execution>
+							<id>copy-resources</id>
+							<phase>process-resources</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}/classes/license</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${rootDir}/license</directory>
+										<includes>
+											<include>LICENSE.txt</include>
+										</includes>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
+						<execution>
+							<id>copy-resources-javadoc</id>
+							<phase>prepare-package</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}/apidocs/license</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${rootDir}/license</directory>
+										<includes>
+											<include>LICENSE.txt</include>
+										</includes>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
+						<execution>
+							<id>copy-resources-to-linux</id>
+							<phase>prepare-package</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}/products/org.openjdk.jmc/linux/gtk/x86_64/legal
+								</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${rootDir}/license</directory>
+										<includes>
+											<include>LICENSE.txt</include>
+											<include>THIRDPARTYREADME.txt</include>
+											<include>COPYRIGHT</include>
+										</includes>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
+						<execution>
+							<id>copy-resources-to-windows</id>
+							<phase>prepare-package</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}/products/org.openjdk.jmc/win32/win32/x86_64/legal
+								</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${rootDir}/license</directory>
+										<includes>
+											<include>LICENSE.txt</include>
+											<include>THIRDPARTYREADME.txt</include>
+											<include>COPYRIGHT</include>
+										</includes>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
+						<execution>
+							<id>copy-resources-to-mac</id>
+							<phase>prepare-package</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}/products/org.openjdk.jmc/macosx/cocoa/x86_64/legal
+								</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${rootDir}/license</directory>
+										<includes>
+											<include>LICENSE.txt</include>
+											<include>THIRDPARTYREADME.txt</include>
+											<include>COPYRIGHT</include>
+										</includes>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+</project>

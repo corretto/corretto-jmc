@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--   
+   Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+   
+   DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   
+   The contents of this file are subject to the terms of either the Universal Permissive License 
+   v 1.0 as shown at http://oss.oracle.com/licenses/upl
+   
+   or the following license:
+   
+   Redistribution and use in source and binary forms, with or without modification, are permitted
+   provided that the following conditions are met:
+   
+   1. Redistributions of source code must retain the above copyright notice, this list of conditions
+   and the following disclaimer.
+   
+   2. Redistributions in binary form must reproduce the above copyright notice, this list of
+   conditions and the following disclaimer in the documentation and/or other materials provided with
+   the distribution.
+   
+   3. Neither the name of the copyright holder nor the names of its contributors may be used to
+   endorse or promote products derived from this software without specific prior written permission.
+   
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+   IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+   FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+   DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+   WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+<jfragent>
+	<!-- Global configuration options -->
+	<config>
+		<!-- This is the prefix to use when generating event class names -->
+		<classprefix>__JFREvent</classprefix>
+		<!-- Will allow the recording of arrays and object parameters as Strings. 
+			 This will cause toString to be called for array elements and objects other 
+			 than strings, which in turn can cause trouble if the toString method is badly 
+			 implemented. Use with care. -->
+		<allowtostring>true</allowtostring>
+		<!-- Allows converters to be used. 
+		     See the org.openjdk.jmc.agent.converters package for more information. -->
+		<allowconverter>true</allowconverter>
+	</config>
+	<events>
+		<event id="demo.jfr.test1">
+			<label>JFR Hello World Event 1 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent.
+			</description>
+			<path>demo/jfrhelloworldevent1</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printHelloWorldJFR1</name>
+				<descriptor>()V</descriptor>
+			</method>
+			<!-- location {ENTRY, EXIT, WRAP} -->
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.test2">
+			<label>JFR Hello World Event 2 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the parameters.
+			</description>
+			<path>demo/jfrhelloworldevent2</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printHelloWorldJFR2</name>
+				<descriptor>(Ljava/lang/String;J)I</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>String Attribute</name>
+						<description>The first parameter</description>
+						<!-- See com.oracle.jrockit.jfr.ContentType {None, Bytes, Timestamp, 
+							Millis, Nanos, Ticks, Address, OSThread, JavaThread, StackTrace, Class, Percentage} -->
+						<contenttype>None</contenttype>
+					</parameter>
+					<parameter index="1">
+						<name>Long Attribute</name>
+						<description>The second parameter</description>
+						<contenttype>Bytes</contenttype>
+					</parameter>
+				</parameters>
+				<returnvalue>
+					<description>The return value</description>
+					<contenttype>None</contenttype>
+				</returnvalue>
+			</method>
+			<!-- location {ENTRY, EXIT, WRAP} -->
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.test11">
+			<label>JFR Hello World Event 11 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the value of static reference
+				'STATIC_STRING_FIELD'
+			</description>
+			<path>demo/jfrhelloworldevent11</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printHelloWorldJFR11</name>
+				<descriptor>()V</descriptor>
+			</method>
+			<fields>
+				<field>
+					<name>'STATIC_STRING_FIELD'</name>
+					<description>Capturing static field with simple field name
+					</description>
+					<expression>STATIC_STRING_FIELD</expression>
+				</field>
+				<field>
+					<name>'InstrumentMe.STATIC_STRING_FIELD'</name>
+					<description>Capturing static field with class name prefixed field
+						name
+					</description>
+					<expression>InstrumentMe.STATIC_STRING_FIELD</expression>
+				</field>
+				<field>
+					<name>'org.openjdk.jmc.agent.test.InstrumentMe.STATIC_STRING_FIELD'
+					</name>
+					<description>Capturing static field with full qualified class
+						prefixed name
+					</description>
+					<expression>org.openjdk.jmc.agent.test.InstrumentMe.STATIC_STRING_FIELD
+					</expression>
+				</field>
+			</fields>
+		</event>
+		<event id="demo.jfr.test12">
+			<label>JFR Hello World Event 12 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the values of
+				'STATIC_OBJECT_FIELD.STATIC_STRING_FIELD' and
+				'STATIC_OBJECT_FIELD.instanceStringField'
+			</description>
+			<path>demo/jfrhelloworldevent12</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printHelloWorldJFR12</name>
+				<descriptor>()V</descriptor>
+			</method>
+			<fields>
+				<field>
+					<name>'STATIC_OBJECT_FIELD.STATIC_STRING_FIELD'</name>
+					<description>Capturing static field on a object reference
+					</description>
+					<expression>STATIC_OBJECT_FIELD.STATIC_STRING_FIELD</expression>
+				</field>
+				<field>
+					<name>'STATIC_OBJECT_FIELD.instanceStringField'</name>
+					<description>Capturing non-static field on a object reference
+					</description>
+					<expression>STATIC_OBJECT_FIELD.instanceStringField</expression>
+				</field>
+			</fields>
+		</event>
+		<event id="demo.jfr.test13">
+			<label>JFR Hello World Event 13 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the values of static
+				'STATIC_NULL_FIELD.STATIC_STRING_FIELD'
+				and 'STATIC_NULL_FIELD.instanceStringField'
+			</description>
+			<path>demo/jfrhelloworldevent13</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printHelloWorldJFR13</name>
+				<descriptor>()V</descriptor>
+			</method>
+			<fields>
+				<field>
+					<name>'STATIC_NULL_FIELD.STATIC_STRING_FIELD'</name>
+					<description>Capturing static field on a null object reference
+					</description>
+					<expression>STATIC_NULL_FIELD.STATIC_STRING_FIELD</expression>
+				</field>
+				<field>
+					<name>'STATIC_NULL_FIELD.instanceStringField'</name>
+					<description>Capturing non-static field on a null object reference
+					</description>
+					<expression>STATIC_NULL_FIELD.instanceStringField</expression>
+				</field>
+			</fields>
+		</event>
+		<event id="demo.jfr.test14">
+			<label>JFR Hello World Event 14 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the value of the thread argument
+			</description>
+			<path>demo/jfrhelloworldevent14</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printHelloWorldJFR14</name>
+				<descriptor>(Ljava/lang/Thread;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>DoLittleThread</name>
+						<description>The Thread from the DoLittleContainer</description>
+					</parameter>
+				</parameters>
+			</method>
+		</event>
+		<event id="demo.jfr.test15">
+			<label>JFR Hello World Event 15 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the value of the class argument
+			</description>
+			<path>demo/jfrhelloworldevent15</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printHelloWorldJFR15</name>
+				<descriptor>(Ljava/lang/Class;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>Instrumented Class</name>
+						<description>Simply the instrumented class, over and over again
+						</description>
+					</parameter>
+				</parameters>
+			</method>
+		</event>
+		<event id="demo.jfr.testI1">
+			<label>JFR Hello World Instance Event 1 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent.
+			</description>
+			<path>demo/jfrhelloworldeventI1</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printInstanceHelloWorldJFR1</name>
+				<descriptor>()V</descriptor>
+			</method>
+			<!-- location {ENTRY, EXIT, WRAP} -->
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.testI2">
+			<label>JFR Hello World Instance Event 2 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the parameters.
+			</description>
+			<path>demo/jfrhelloworldeventI2</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printInstanceHelloWorldJFR2</name>
+				<descriptor>(Ljava/lang/String;J)I</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>String Attribute</name>
+						<description>The first parameter</description>
+						<contenttype>None</contenttype>
+					</parameter>
+					<parameter index="1">
+						<name>Long Attribute</name>
+						<description>The second parameter</description>
+						<contenttype>Bytes</contenttype>
+					</parameter>
+				</parameters>
+				<returnvalue>
+					<description>The return value</description>
+					<contenttype>None</contenttype>
+				</returnvalue>
+			</method>
+		</event>
+		<event id="demo.jfr.testI3">
+			<label>JFR Hello World Instance Event 3 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the parameters.
+			</description>
+			<path>demo/jfrhelloworldeventI3</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printHelloWorldJFR3</name>
+				<descriptor>(Lorg/openjdk/jmc/agent/test/Gurka;)V</descriptor>
+				<!-- Note that this will only work if we allow toString -->
+				<parameters>
+					<parameter index="0">
+						<name>Gurka Attribute</name>
+						<description>The one and only Gurk-parameter</description>
+						<contenttype>None</contenttype>
+					</parameter>
+				</parameters>
+			</method>
+		</event>
+		<event id="demo.jfr.testI4">
+			<label>JFR Hello World Instance Event 4 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the parameters.
+			</description>
+			<path>demo/jfrhelloworldeventI4</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printHelloWorldJFR4</name>
+				<descriptor>([Lorg/openjdk/jmc/agent/test/Gurka;)V</descriptor>
+				<!-- Note that this will only work if we allow toString -->
+				<parameters>
+					<parameter index="0">
+						<name>Gurka Array Attribute</name>
+						<description>The one and only Gurk-array-parameter</description>
+						<contenttype>None</contenttype>
+					</parameter>
+				</parameters>
+			</method>
+		</event>
+		<event id="demo.jfr.testI5">
+			<label>JFR Hello World Instance Event 5 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the parameters.
+			</description>
+			<path>demo/jfrhelloworldeventI5</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printInstanceHelloWorldJFR5</name>
+				<descriptor>(Ljava/util/Collection;)V</descriptor>
+				<!-- Note that this will only work if we allow toString -->
+				<parameters>
+					<parameter index="0">
+						<name>Gurka Collection Attribute</name>
+						<description>The one and only Gurk-collection</description>
+						<contenttype>None</contenttype>
+					</parameter>
+				</parameters>
+			</method>
+		</event>
+		<event id="demo.jfr.testI6">
+			<label>JFR Hello World Instance Event 6 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the return value.
+			</description>
+			<path>demo/jfrhelloworldeventI6</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printInstanceHelloWorldJFR6</name>
+				<descriptor>()D</descriptor>
+				<!-- Note that this will only work if we allow toString -->
+				<returnvalue>
+					<description>A value between 0 and 100 (double)</description>
+					<contenttype>Percentage</contenttype>
+				</returnvalue>
+			</method>
+		</event>
+		<event id="demo.jfr.testI7">
+			<label>JFR Hello World Instance Event 7 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. The
+				original method contains a try-catch
+				clause.
+			</description>
+			<path>demo/jfrhelloworldeventI7</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printInstanceHelloWorldJFR7</name>
+				<descriptor>()V</descriptor>
+			</method>
+		</event>
+		<event id="demo.jfr.testI8">
+			<label>JFR Hello World Instance Event 8 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record even if an exception is raised.
+			</description>
+			<path>demo/jfrhelloworldeventI8</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printInstanceHelloWorldJFR8</name>
+				<descriptor>()V</descriptor>
+			</method>
+			<rethrow>true</rethrow>
+		</event>
+		<event id="demo.jfr.testI9">
+			<label>JFR Hello World Instance Event 9 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				not record if an exception is raised.
+			</description>
+			<path>demo/jfrhelloworldeventI9</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printInstanceHelloWorldJFR9</name>
+				<descriptor>()V</descriptor>
+			</method>
+		</event>
+		<event id="demo.jfr.testI10">
+			<label>JFR Hello World Instance Event 10 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record even if an exception is raised,
+				but should
+				not overwrite the
+				existing try-catch clause.
+			</description>
+			<path>demo/jfrhelloworldeventI10</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printInstanceHelloWorldJFR10</name>
+				<descriptor>()V</descriptor>
+			</method>
+			<rethrow>true</rethrow>
+		</event>
+		<event id="demo.jfr.testI11">
+			<label>JFR Hello World Instance Event 11 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the value of instance reference
+				'instanceStringField'
+			</description>
+			<path>demo/jfrhelloworldeventI11</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe</class>
+			<method>
+				<name>printInstanceHelloWorldJFR11</name>
+				<descriptor>()V</descriptor>
+			</method>
+			<fields>
+				<field>
+					<name>'instanceStringField'</name>
+					<description>Capturing instance field with simple field name
+					</description>
+					<expression>instanceStringField</expression>
+				</field>
+				<field>
+					<name>'this.instanceStringField'</name>
+					<description>Capturing instance field with "this" prefixed field
+						name
+					</description>
+					<expression>this.instanceStringField</expression>
+				</field>
+				<field>
+					<name>'InstrumentMe.this.instanceStringField'</name>
+					<description>Capturing instance field with qualified "this"
+						prefixed field name
+					</description>
+					<expression>InstrumentMe.this.instanceStringField</expression>
+				</field>
+			</fields>
+		</event>
+		<event id="demo.jfr.testI12">
+			<label>JFR Hello World Instance Event 12 %TEST_NAME%</label>
+			<description>Defined in the xml file and added by the agent. Should
+				record the values of various
+				references
+			</description>
+			<path>demo/jfrhelloworldeventI12</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.test.InstrumentMe$MyInnerClass</class>
+			<method>
+				<name>instrumentationPoint</name>
+				<descriptor>()V</descriptor>
+			</method>
+			<fields>
+				<field>
+					<name>'innerClassField'</name>
+					<description>Capturing inner class field with simple field name
+					</description>
+					<expression>innerClassField</expression>
+				</field>
+				<field>
+					<name>'this.innerClassField'</name>
+					<description>Capturing inner class field with "this" prefixed field
+						name
+					</description>
+					<expression>this.innerClassField</expression>
+				</field>
+
+				<field>
+					<name>'instanceStringField'</name>
+					<description>Capturing outer class field with simple field name
+					</description>
+					<expression>instanceStringField</expression>
+				</field>
+				<field>
+					<name>'InstrumentMe.this.instanceStringField'</name>
+					<description>Capturing outer class field with qualified "this"
+						prefixed field name
+					</description>
+					<expression>InstrumentMe.this.instanceStringField</expression>
+				</field>
+				<field>
+					<name>'super.instanceStringField'</name>
+					<description>Capturing super class field with "super" prefixed
+						field name
+					</description>
+					<expression>super.instanceStringField</expression>
+				</field>
+
+				<field>
+					<name>'STATIC_STRING_FIELD'</name>
+					<description>Capturing outer class field with simple field name
+					</description>
+					<expression>STATIC_STRING_FIELD</expression>
+				</field>
+				<field>
+					<name>'InstrumentMe.STATIC_STRING_FIELD'</name>
+					<description>Capturing outer class field with class name prefixed
+						field name
+					</description>
+					<expression>InstrumentMe.STATIC_STRING_FIELD</expression>
+				</field>
+			</fields>
+		</event>
+	</events>
+</jfragent>
