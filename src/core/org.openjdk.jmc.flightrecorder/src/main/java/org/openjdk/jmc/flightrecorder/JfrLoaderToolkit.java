@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  *
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -42,14 +42,14 @@ import java.util.List;
 
 import org.openjdk.jmc.common.io.IOToolkit;
 import org.openjdk.jmc.common.item.IItemCollection;
-import org.openjdk.jmc.flightrecorder.internal.EventArray;
+import org.openjdk.jmc.flightrecorder.internal.EventArrays;
 import org.openjdk.jmc.flightrecorder.internal.FlightRecordingLoader;
 import org.openjdk.jmc.flightrecorder.parser.IParserExtension;
 import org.openjdk.jmc.flightrecorder.parser.ParserExtensionRegistry;
 
 /**
- * A Java 1.7 compatible collection of methods used to load binary JFR data into
- * {@link IItemCollection} implementations.
+ * A collection of methods used to load binary JFR data into {@link IItemCollection}
+ * implementations.
  */
 public class JfrLoaderToolkit {
 
@@ -58,19 +58,16 @@ public class JfrLoaderToolkit {
 	 *            the files to read the recording from
 	 * @param extensions
 	 *            the extensions to use when parsing the file
-	 * @return an array of EventArrays (one event type per EventArray)
+	 * @return an object holding an array of EventArrays (one event type per EventArray)
 	 */
-	private static EventArray[] loadFile(List<File> files, List<? extends IParserExtension> extensions)
+	private static EventArrays loadFile(List<File> files, List<? extends IParserExtension> extensions)
 			throws IOException, CouldNotLoadRecordingException {
 		List<InputStream> streams = new ArrayList<>(files.size());
 		for (File file : files) {
 			streams.add(IOToolkit.openUncompressedStream(file));
 		}
-		InputStream stream = new SequenceInputStream(Collections.enumeration(streams));
-		try {
+		try (InputStream stream = new SequenceInputStream(Collections.enumeration(streams))) {
 			return FlightRecordingLoader.loadStream(stream, extensions, false, true);
-		} finally {
-			IOToolkit.closeSilently(stream);
 		}
 	}
 
@@ -97,9 +94,10 @@ public class JfrLoaderToolkit {
 	 * @return the events in the recording
 	 */
 	public static IItemCollection loadEvents(InputStream stream, List<? extends IParserExtension> extensions)
-			throws IOException, CouldNotLoadRecordingException {
-		InputStream in = IOToolkit.openUncompressedStream(stream);
-		return EventCollection.build(FlightRecordingLoader.loadStream(in, extensions, false, true));
+			throws CouldNotLoadRecordingException, IOException {
+		try (InputStream in = IOToolkit.openUncompressedStream(stream)) {
+			return EventCollection.build(FlightRecordingLoader.loadStream(in, extensions, false, true));
+		}
 	}
 
 	/**

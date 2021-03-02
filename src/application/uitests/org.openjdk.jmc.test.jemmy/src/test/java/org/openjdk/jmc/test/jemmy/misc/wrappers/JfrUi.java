@@ -58,6 +58,7 @@ public class JfrUi extends MCJemmyBase {
 		AUTOMATED_ANALYSIS_RESULTS,
 		JAVA_APPLICATION,
 		THREADS,
+		THREADS_LEGACY,
 		MEMORY,
 		LOCK_INSTANCES,
 		FILE_IO,
@@ -107,6 +108,9 @@ public class JfrUi extends MCJemmyBase {
 			case THREADS:
 				tabText = new String[] {"Java Application", "Threads"};
 				break;
+			case THREADS_LEGACY:
+				tabText = new String[] {"Java Application", "Threads", "(Legacy) Threads"};
+				break;
 			case MEMORY:
 				tabText = new String[] {"Java Application", "Memory"};
 				break;
@@ -151,7 +155,7 @@ public class JfrUi extends MCJemmyBase {
 				break;
 			case NATIVE_LIBRARIES:
 				tabText = new String[] {"Environment", "Native Libraries"};
-				break;				
+				break;
 			case ENVIRONMENT_VARIABLES:
 				tabText = new String[] {"Environment", "Environment Variables"};
 				break;
@@ -164,8 +168,8 @@ public class JfrUi extends MCJemmyBase {
 	}
 
 	/**
-	 * Opens the file in Mission Control, waits for the editor to show up and the system to become idle (all
-	 * rendering and rule calculation done)
+	 * Opens the file in Mission Control, waits for the editor to show up and the system to become
+	 * idle (all rendering and rule calculation done)
 	 *
 	 * @param file
 	 *            a file representing a flight recording
@@ -175,31 +179,31 @@ public class JfrUi extends MCJemmyBase {
 	}
 
 	/**
-	 * Opens the file in Mission Control, optionally waits for the editor to show up and the system to become
-	 * idle (all rendering and rule calculation done)
+	 * Opens the file in Mission Control, optionally waits for the editor to show up and the system
+	 * to become idle (all rendering and rule calculation done)
 	 *
 	 * @param file
 	 *            a file representing a flight recording
 	 * @param waitForEditor
-	 *            {@code true} if supposed to wait for the editor before returning. Otherwise
-	 *            will return immediately
+	 *            {@code true} if supposed to wait for the editor before returning. Otherwise will
+	 *            return immediately
 	 */
 	public static void openJfr(File file, boolean waitForEditor) {
 		openJfr(file, true, waitForEditor);
 	}
 
 	/**
-	 * Opens the file in Mission Control, waits for the editor to show up and the system to become idle (all
-	 * rendering and rule calculation done)
+	 * Opens the file in Mission Control, waits for the editor to show up and the system to become
+	 * idle (all rendering and rule calculation done)
 	 *
 	 * @param file
 	 *            a file representing a flight recording
 	 * @param handlePotentialDecompressionDialog
-	 *            {@code true} if a (potential) decompression dialog should be handled by
-	 *            clicking the Yes button. Otherwise won't check for the dialog
+	 *            {@code true} if a (potential) decompression dialog should be handled by clicking
+	 *            the Yes button. Otherwise won't check for the dialog
 	 * @param waitForEditor
-	 *            {@code true} if supposed to wait for the editor before returning. Otherwise
-	 *            will return immediately
+	 *            {@code true} if supposed to wait for the editor before returning. Otherwise will
+	 *            return immediately
 	 */
 	public static void openJfr(File file, boolean handlePotentialDecompressionDialog, boolean waitForEditor) {
 		TestHelper.openJfr(file.getAbsolutePath());

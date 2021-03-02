@@ -33,8 +33,6 @@
 package org.openjdk.jmc.flightrecorder.controlpanel.ui.actions;
 
 import org.eclipse.jface.wizard.IWizard;
-
-import org.openjdk.jmc.common.io.IOToolkit;
 import org.openjdk.jmc.flightrecorder.controlpanel.ui.ControlPanel;
 import org.openjdk.jmc.flightrecorder.controlpanel.ui.FlightRecorderProvider;
 import org.openjdk.jmc.flightrecorder.controlpanel.ui.ImageConstants;
@@ -60,11 +58,9 @@ public class StartRecordingAction extends AbstractWizardUserAction {
 
 	@Override
 	public IWizard doCreateWizard() throws Exception {
-		IConnectionHandle handle = null;
-		try {
-			handle = recorder.getServerHandle().connect(Messages.ACTION_START_RECORDING_LABEL);
+		try (IConnectionHandle handle = recorder.getServerHandle().connect(Messages.ACTION_START_RECORDING_LABEL)) {
 			IFlightRecorderService flrService = handle.getServiceOrNull(IFlightRecorderService.class);
-			if (flrService == null) {
+			if (flrService == null || !JVMSupportToolkit.hasFlightRecorder(handle)) {
 				throw new FlightRecorderException(JVMSupportToolkit.getNoFlightRecorderErrorMessage(handle, false));
 			} else if (flrService.isEnabled()
 					|| ControlPanel.askUserForEnable(flrService, Messages.COMMERCIAL_FEATURES_QUESTION)) {
@@ -78,8 +74,6 @@ public class StartRecordingAction extends AbstractWizardUserAction {
 		} catch (Exception e) {
 			recorder.setWarning(e.getLocalizedMessage());
 			throw e;
-		} finally {
-			IOToolkit.closeSilently(handle);
 		}
 	}
 

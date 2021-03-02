@@ -6,28 +6,63 @@ Builds of Mission Control can currently be found in the Oracle JDK on supported 
 
 For more information on Mission Control, see http://www.oracle.com/missioncontrol.
 
-### Core API Features
+## Downloading Builds
+Binary distributions of JDK Mission Control are provided by different downstream vendors.
 
-* Core APIs for parsing and processing Java flight recordings 
+### AdoptOpenJDK
+* Released version
+* EA builds of upcoming release
+* Downloadable Eclipse update site archive
 
-* Core API can *read* recordings from JDK 7 and above
+[http://adoptopenjdk.net/jmc](http://adoptopenjdk.net/jmc)
 
-* Core API can *run* on JDK 7 and above
 
-* Core API contains a framework for handling units of measurement and physical quantities
+### Azul (Zulu Mission Control)
+* Released version
 
-* Core API supports headless analysis of Java flight recordings
+[https://www.azul.com/products/zulu-mission-control](https://www.azul.com/products/zulu-mission-control)
 
+
+### Bell-Soft (Liberica Mission Control)
+* Released version
+
+[https://bell-sw.com/pages/lmc](https://bell-sw.com/pages/lmc)
+
+### Oracle
+* Released version
+* Integrated (in-app) update site
+* Eclipse update site
+
+[http://jdk.java.net/jmc](http://jdk.java.net/jmc)
+
+### Red Hat
+* Released version
+
+Red Hat distributes JDK Mission Control as RPMs in Fedora and RHEL. JMC is also included in the OpenJDK [developer builds](https://developers.redhat.com/products/openjdk/download) for Windows.
+
+## Mission Control Features
 
 ### Application Features
 
-* An application supporting framework for hosting various useful Java tools 
+* A framework for hosting various useful Java tools 
 
 * A tool for visualizing the contents of Java flight recordings, and the results of an automated analysis of the contents
 
 * A JMX Console 
 
 * A tool for heap waste analysis
+
+### Core API Features
+
+* Core APIs for parsing and processing Java flight recordings 
+
+* Core API can *read* recordings from JDK 7 and above
+
+* Core API can *run* on JDK 8 and above
+
+* Core API contains a framework for handling units of measurement and physical quantities
+
+* Core API supports headless analysis of Java flight recordings
 
 
 ### Core API Example
@@ -103,7 +138,7 @@ public class RunRulesOnFileSimple {
 ```
 
 
-Example for programmatically running rules in parallel (requires JDK8):
+Example for programmatically running rules in parallel:
 
 ```java
 import java.io.File;
@@ -177,9 +212,21 @@ public class RunRulesOnFile {
 ## Building Mission Control from Source
 
 Prerequisites for building Mission Control:
-1. Install JDK 8, and make sure it is the JDK in use (java -version)
+
+1. Install JDK 11, and make sure it is the JDK in use (java -version)
 
 2. Install Maven (version 3.3.x. or above)
+
+On Linux you can use the build.sh script to build JMC:
+```
+usage: call ./build.sh with the following options:
+   --test        to run the tests
+   --testUi      to run the tests including UI tests
+   --packageJmc  to package JMC
+   --clean       to run maven clean
+```
+
+Otherwise follow the steps manually:
 
 First get third party dependencies into a local p2 repo and make it available on localhost:
 
@@ -290,13 +337,13 @@ target/products/org.openjdk.jmc/macosx/cocoa/x86_64/JDK\ Mission\ Control.app/Co
 Here is an example for Linux:
 
 ```bash
-target/products/org.openjdk.jmc/linux/gtk/x86_64/jmc
+target/products/org.openjdk.jmc/linux/gtk/x86_64/JDK\ Mission\ Control/jmc
 ```
 
 And here is an example for Windows x64:
 
 ```bash
-target\products\org.openjdk.jmc\win32\win32\x86_64\jmc.exe
+"target\products\org.openjdk.jmc\win32\win32\x86_64\JDK Mission Control\jmc"
 ```
 
 ## Using the Built JMC Update Site in Eclipse
@@ -317,25 +364,14 @@ application/org.openjdk.jmc.updatesite.ide/target/
 To install it into Eclipe, simply open Eclipse and select Help | Install New Software... In the dialog, click Add... and then click the Archive... button. Select the built update site, e.g. 
 
 ```bash
-application/org.openjdk.jmc.updatesite.ide/target/org.openjdk.jmc.updatesite.ide-7.1.1-SNAPSHOT.zip
+application/org.openjdk.jmc.updatesite.ide/target/org.openjdk.jmc.updatesite.ide-8.0.0-SNAPSHOT.zip
 ```
 
-## Setting Up for Development and Launching in Eclipse
-First make sure that you have a recent version of Eclipse. An Eclipse 2018-09 with the JDK 11 plug-in installed (available from Eclipse Marketplace) will do. You may also want to install the Mercurial Plug-in for Eclipse (MercurialEclipse). The Eclipse Marketplace is available under **Help | Eclipse Marketplace...**.
+## Setting up Development Environment
+Please follow the [Developer Guide](docs/devguide/README.md).
 
-To set Eclipse up for JMC development, do the following:
-
-1. First ensure that you have started the jetty server in the first step of building JMC.
-2. Next open (File | Open...) the Eclipse target platform of interest, for example releng/platform-definitions/platform-definition-photon/platform.target
-3. In the upper right corner of the platform editor that opens, click the link "Set as Active Target Platform"
-4. Import the projects you are interested in (core and/or application) into a recent Eclipse.
-5. If importing the application projects, make sure you create a user library (Preferences | Java/Build Path/User Libraries) named JMC_JDK, and add (Add External JARs...) the following JARs from a JDK 8 (u40 or above) to the User Library:
- - tools.jar (<JDK>/lib/tools.jar)
- - jconsole.jar (<JDK>/lib/jconsole.jar)
- - jfxswt.jar (<JDK>/jre/lib/jfxswt.jar)
- - jfxrt.jar (<JDK>/jre/lib/ext/jfxrt.jar)
-
-Note that importing configuration/ide/eclipse as an Eclipse project should automatically make the development launchers available to you.
+## FAQ
+For help with frequently asked questions, see the [JMC FAQ](https://wiki.openjdk.java.net/display/jmc/JMC+FAQ) on the JMC Wiki.
 
 ## License
 The Mission Control source code is made available under the Universal Permissive License (UPL), Version 1.0 or a BSD-style license, alternatively. The full open source license text is available at license/LICENSE.txt in the JMC project.

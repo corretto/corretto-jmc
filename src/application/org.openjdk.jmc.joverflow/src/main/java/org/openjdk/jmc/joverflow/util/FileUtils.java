@@ -44,8 +44,6 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openjdk.jmc.common.io.IOToolkit;
-
 /**
  * Simple file-related utilities.
  */
@@ -107,11 +105,8 @@ public class FileUtils {
 	}
 
 	public static void writeBytesToFile(File file, byte[] bytes) throws IOException {
-		BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-		try {
+		try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
 			out.write(bytes);
-		} finally {
-			IOToolkit.closeSilently(out);
 		}
 	}
 

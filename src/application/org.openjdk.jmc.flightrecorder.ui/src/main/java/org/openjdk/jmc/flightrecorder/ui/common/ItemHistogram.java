@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020 Oracle and/or its affiliates. All rights reserved.
  * 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -50,21 +50,22 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Table;
-
 import org.openjdk.jmc.common.IDisplayable;
 import org.openjdk.jmc.common.item.IAccessorFactory;
 import org.openjdk.jmc.common.item.IAggregator;
 import org.openjdk.jmc.common.item.IAttribute;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IMemberAccessor;
+import org.openjdk.jmc.common.item.ItemCollectionToolkit;
 import org.openjdk.jmc.common.unit.ContentType;
+import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.LinearKindOfQuantity;
+import org.openjdk.jmc.common.unit.UnitLookup;
 import org.openjdk.jmc.common.util.CompositeKey;
 import org.openjdk.jmc.common.util.TypeHandling;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
-import org.openjdk.jmc.flightrecorder.ui.ItemIterableToolkit;
 import org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages;
 import org.openjdk.jmc.ui.TypeAppearance;
 import org.openjdk.jmc.ui.UIPlugin;
@@ -127,6 +128,27 @@ public class ItemHistogram {
 			addColumn(colId, ic -> ic.getAggregate(a), a.getName(), a.getDescription(), style);
 		}
 
+		public void addPercentageColumn(String colId, IAggregator<?, ?> a) {
+			addPercentageColumn(colId, a, a.getName(), a.getDescription());
+		}
+
+		public void addPercentageColumn(String colId, IAggregator<?, ?> a, String name, String description) {
+			int style = a.getValueType() instanceof LinearKindOfQuantity ? SWT.RIGHT : SWT.NONE;
+
+			BiFunction<IItemCollection, IItemCollection, ?> percentageFunction = (rowItems, allItems) -> {
+				if (a.getValueType() instanceof LinearKindOfQuantity) {
+					IQuantity rowResult = (IQuantity) rowItems.getAggregate(a);
+					IQuantity allResult = (IQuantity) allItems.getAggregate(a);
+					if (rowResult != null && allResult != null) {
+						return UnitLookup.PERCENT.quantity(rowResult.ratioTo(allResult) * 100);
+					}
+				}
+				return rowItems.getAggregate(a);
+			};
+
+			addPercentageColumn(colId, percentageFunction, name, description, style);
+		}
+
 		public void addColumn(
 			String colId, Function<IItemCollection, ?> valueFunction, String name, String description) {
 			addColumn(colId, valueFunction, name, description, SWT.NONE);
@@ -138,14 +160,31 @@ public class ItemHistogram {
 					.style(style).build());
 		}
 
+		public void addPercentageColumn(
+			String colId, BiFunction<IItemCollection, IItemCollection, ?> valueFunction, String name,
+			String description, int style) {
+			IMemberAccessor<?, Object> column = grid.addPercentageColumn(valueFunction);
+			BackgroundFractionDrawer percentageValueDrawer = new BackgroundFractionDrawer() {
+				@Override
+				public void handleEvent(Event event) {
+					Object row = event.item.getData();
+					Object item = column.getMember(row);
+					if (item instanceof Number) {
+						draw(((Number) item).doubleValue() / 100, event);
+					}
+				}
+			};
+			columns.add(new ColumnBuilder(name, colId, column).description(description).style(style)
+					.columnDrawer(percentageValueDrawer).build());
+		}
+
 		public <T> void addColumn(IAttribute<T> a) {
 			// FIXME: Refactor/remove this method to avoid it being used instead of passing an IAggregator.
 			// Accessing the thread-group is quite a special case as it is a property of the key (group by attribute).
 			// The caller of this method should be responsible for passing a unique column id, as with aggregators.
-			IMemberAccessor<Object, T> anyValueAccessor = row -> ItemCollectionToolkit
-					.stream(AggregationGrid.getItems(row))
-					.flatMap(is -> ItemIterableToolkit.stream(is).map(a.getAccessor(is.getType())::getMember))
-					.filter(Objects::nonNull).findAny().orElse(null);
+			IMemberAccessor<Object, T> anyValueAccessor = row -> AggregationGrid.getItems(row).stream()
+					.flatMap(is -> is.stream().map(a.getAccessor(is.getType())::getMember)).filter(Objects::nonNull)
+					.findAny().orElse(null);
 			columns.add(new ColumnBuilder(a.getName(), a.getIdentifier(), anyValueAccessor)
 					.description(a.getDescription()).build());
 		}
@@ -253,7 +292,7 @@ public class ItemHistogram {
 	}
 
 	public void show(IItemCollection items) {
-		columnManager.getViewer().setInput(grid.buildRows(ItemCollectionToolkit.stream(items), classifier));
+		columnManager.getViewer().setInput(grid.buildRows(items, classifier));
 	}
 
 	/*

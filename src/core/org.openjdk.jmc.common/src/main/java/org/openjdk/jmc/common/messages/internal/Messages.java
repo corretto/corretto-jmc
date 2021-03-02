@@ -55,6 +55,7 @@ public class Messages {
 	public static final String ItemAggregate_TOTAL = "ItemAggregate_TOTAL"; //$NON-NLS-1$
 	public static final String ItemAggregate_VARIANCE = "ItemAggregate_VARIANCE"; //$NON-NLS-1$
 	public static final String ItemAggregate_VARIANCEP = "ItemAggregate_VARIANCEP"; //$NON-NLS-1$
+	public static final String ITEM_COLLECTION_DESC = "ITEM_COLLECTION_DESC";
 	public static final String MISSING_VALUE = "MISSING_VALUE"; //$NON-NLS-1$
 	public static final String MISSING_VALUE_TOOLTIP = "MISSING_VALUE_TOOLTIP"; //$NON-NLS-1$
 	public static final String QuantityConversionException_CONSTRAINTS_DO_NOT_MATCH = "QuantityConversionException_CONSTRAINTS_DO_NOT_MATCH"; //$NON-NLS-1$
@@ -72,7 +73,6 @@ public class Messages {
 	public static final String TimestampKind_SINCE_1970_MSG = "TimestampKind_SINCE_1970_MSG"; //$NON-NLS-1$
 	public static final String TypeHandling_MESSAGE_SIZE = "TypeHandling_MESSAGE_SIZE"; //$NON-NLS-1$
 	public static final String UnitLookup_TIMESTAMP_OUT_OF_RANGE = "UnitLookup_TIMESTAMP_OUT_OF_RANGE"; //$NON-NLS-1$
-	public static final String UnsupportedFormatException_LZ4_NOT_SUPPORTED = "UnsupportedFormatException_LZ4_NOT_SUPPORTED"; //$NON-NLS-1$
 
 	private Messages() {
 	}

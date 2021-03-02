@@ -38,7 +38,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.osgi.util.NLS;
-import org.openjdk.jmc.common.io.IOToolkit;
 import org.openjdk.jmc.common.unit.IConstrainedMap;
 import org.openjdk.jmc.flightrecorder.configuration.events.EventOptionID;
 import org.openjdk.jmc.flightrecorder.controlpanel.ui.ControlPanel;
@@ -69,9 +68,7 @@ public class UpdateRecordingJob extends Job {
 
 	@Override
 	protected IStatus run(IProgressMonitor monitor) {
-		IConnectionHandle connection = null;
-		try {
-			connection = m_server.connect(getName());
+		try (IConnectionHandle connection = m_server.connect(getName())) {
 			IFlightRecorderService flightRecorderService = connection.getServiceOrThrow(IFlightRecorderService.class);
 			flightRecorderService.updateRecordingOptions(m_recordingDescriptor, m_recordingOptions);
 			flightRecorderService.updateEventOptions(m_recordingDescriptor, m_recordingSettings);
@@ -80,8 +77,6 @@ public class UpdateRecordingJob extends Job {
 			ControlPanel.getDefault().getLogger().log(Level.WARNING, "Could not update recording", e); //$NON-NLS-1$
 			return StatusFactory.createErr(
 					NLS.bind(Messages.UPDATE_RECORDING_JOB_SERVICE_ERROR_MSG, m_recordingDescriptor.getName()));
-		} finally {
-			IOToolkit.closeSilently(connection);
 		}
 	}
 }

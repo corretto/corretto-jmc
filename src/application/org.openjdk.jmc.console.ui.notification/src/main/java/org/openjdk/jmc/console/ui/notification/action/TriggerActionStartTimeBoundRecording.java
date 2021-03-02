@@ -41,11 +41,9 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.osgi.util.NLS;
-
 import org.openjdk.jmc.alert.AlertObject;
 import org.openjdk.jmc.alert.AlertPlugin;
 import org.openjdk.jmc.alert.NotificationUIToolkit;
-import org.openjdk.jmc.common.io.IOToolkit;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.QuantityConversionException;
 import org.openjdk.jmc.common.unit.UnitLookup;
@@ -181,11 +179,8 @@ public class TriggerActionStartTimeBoundRecording extends TriggerAction implemen
 	private File dumpFile(
 		IProgressMonitor monitor, IFlightRecorderService service, IRecordingDescriptor descriptor, MCFile path)
 			throws IOException, FlightRecorderException {
-		InputStream stream = service.openStream(descriptor, false);
-		try {
+		try (InputStream stream = service.openStream(descriptor, false)) {
 			return IDESupportToolkit.writeToUniqueFile(path, stream, monitor);
-		} finally {
-			IOToolkit.closeSilently(stream);
 		}
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020 Oracle and/or its affiliates. All rights reserved.
  * 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -99,6 +99,8 @@ public class Messages extends NLS {
 	public static String CompilationsPage_ROW_DURATIONS;
 	public static String CompilationsPage_TAB_COMPILATIONS;
 	public static String CompilationsPage_TAB_COMPILATIONS_FAILED;
+	public static String DropdownLaneFilter_QUICK_FILTER;
+	public static String DropdownLaneFilter_THREAD_STATE_SELECTION;
 	public static String DUMP_RECORDING_DEFAULT_TIMESPAN_TO_DUMP;
 	public static String DUMP_RECORDING_NO_DEFAULT;
 	public static String DUMP_RECORDING_TIMESPAN;
@@ -175,6 +177,7 @@ public class Messages extends NLS {
 	public static String FlavorSelector_BUTTON_TIMERANGE_SET;
 	public static String FlavorSelector_BUTTON_TIMERANGE_SET_TOOLTIP;
 	public static String FlavorSelector_LABEL_ASPECT;
+	public static String FlavorSelector_LABEL_SELECTION;
 	public static String FlavorSelector_LABEL_NO_SELECTION;
 	public static String FlavorSelector_LABEL_TIMERANGE;
 	public static String GCConfigurationPage_PAGE_NAME;
@@ -199,6 +202,8 @@ public class Messages extends NLS {
 	public static String GarbageCollectionsPage_ROW_PAUSE_PHASES;
 	public static String GarbageCollectionsPage_ROW_PAUSE_PHASES_DESC;
 	public static String GarbageCollectionsPage_TIMELINE_SELECTION;
+	public static String GarbageCollectionsPage_USED_HEAP_AFTER_GC;
+	public static String GarbageCollectionsPage_USED_HEAP_BEFORE_GC;
 	public static String GarbageCollectionsPage_USED_HEAP_DELTA;
 	public static String GarbageCollectionsPage_USED_METASPACE_DELTA;
 	public static String HeapPage_LIVE_SIZE_OF_CLASS;
@@ -212,6 +217,8 @@ public class Messages extends NLS {
 	public static String HeapPage_ROW_MEMORY_USAGE_DESC;
 	public static String HeapPage_SELECTED_CLASS;
 	public static String HeapPage_SELECTED_CLASSES;
+	public static String HeapPage_ALLOCATION_TOTAL_PERCENTAGE;
+	public static String HeapPage_ALLOCATION_TOTAL_PERCENTAGE_DESC;
 	public static String INFORMATION_COMPONENT_NOT_AVAILABLE;
 	public static String IO_PAGE_DURATIONS_DESCRIPTION;
 	public static String IO_PAGE_EVENT_LOG_DESCRIPTION;
@@ -227,7 +234,6 @@ public class Messages extends NLS {
 	public static String ITEM_CHART_SHOW_IN_BAR_CHART;
 	public static String ITEM_CHART_SHOW_IN_LINE_CHART;
 	public static String ITEM_CHART_TIMELINE_SELECTION;
-	public static String ITEM_COLLECTION_DESC;
 	public static String ITEM_LIST_ELLIPSIS_TEXT;
 	public static String ITEM_LIST_SIZE_LESS_THAN_ZERO;
 	public static String ITEM_LIST_SIZE_PREF;
@@ -348,6 +354,8 @@ public class Messages extends NLS {
 	public static String MethodProfilingPage_CLASS_HISTOGRAM_SELECTION;
 	public static String MethodProfilingPage_PACKAGE_HISTOGRAM_SELECTION;
 	public static String MethodProfilingPage_PAGE_NAME;
+	public static String MethodProfilingPage_PREDECESSORS_DESCRIPTION;
+	public static String MethodProfilingPage_SUCCESSORS_DESCRIPTION;
 	public static String NativeLibraryPage_PAGE_NAME;
 	public static String NAVIGATOR_MOVE_BACKWARD_TEXT;
 	public static String NAVIGATOR_MOVE_FORWARD_TEXT;
@@ -359,6 +367,8 @@ public class Messages extends NLS {
 	public static String PAGES_EVENT_LOG;
 	public static String PAGES_TIMELINE;
 	public static String PAGES_SIZE;
+	public static String PAGES_SUCCESSORS;
+	public static String PAGES_PREDECESSORS;
 	public static String PAGE_CHANGE_ICON_CHOOSE_IMAGE_FILE;
 	public static String PAGE_CHANGE_ICON_CURRENT_ICON;
 	public static String PAGE_CHANGE_ICON_MENU_ACTION;
@@ -420,12 +430,13 @@ public class Messages extends NLS {
 	public static String RecordingPage_SECTION_CONCURRENT_RECORDINGS;
 	public static String RecordingPage_SECTION_EVENT_SETTINGS;
 	public static String RecordingPage_SECTION_RECORDING_INFORMATION;
-	public static String ResultOverview_COLUMN_LONG_DESCRIPTION;
+	public static String ResultOverview_COLUMN_EXPLANATION;
 	public static String ResultOverview_COLUMN_PAGE;
 	public static String ResultOverview_COLUMN_RESULT_ID;
 	public static String ResultOverview_COLUMN_RULE_NAME;
 	public static String ResultOverview_COLUMN_SCORE;
-	public static String ResultOverview_COLUMN_SHORT_DESCRIPTION;
+	public static String ResultOverview_COLUMN_SUMMARY;
+	public static String ResultOverview_COLUMN_SOLUTION;
 	public static String ResultOverview_DISPLAYMODE_REPORT;
 	public static String ResultOverview_DISPLAYMODE_TABLE;
 	public static String ResultOverview_EXPORT_ACTION;
@@ -446,6 +457,7 @@ public class Messages extends NLS {
 	public static String SELECT_RANGE_WIZARD_TITLE;
 	public static String SELECT_RANGE_WIZARD_TO_MUCH_SELECTED_WARNING;
 	public static String STACKTRACE_VIEW_COUNT_COLUMN_NAME;
+	public static String STACKTRACE_VIEW_PERCENTAGE_COLUMN_NAME;
 	public static String STACKTRACE_VIEW_DISTINGUISH_FRAMES_BY;
 	public static String STACKTRACE_VIEW_FRAME_GROUP_CHOOSE;
 	public static String STACKTRACE_VIEW_FRAME_GROUP_NEXT;
@@ -458,7 +470,7 @@ public class Messages extends NLS {
 	public static String STACKTRACE_VIEW_OPTIMIZATION_TYPE;
 	public static String STACKTRACE_VIEW_REDUCE_TREE_DEPTH;
 	public static String STACKTRACE_VIEW_SELECTION;
-	public static String STACKTRACE_VIEW_SHOW_AS_TREE;
+	public static String STACKTRACE_VIEW_TREE_VIEW;
 	public static String STACKTRACE_VIEW_STACK_TRACE;
 	public static String STACKTRACE_VIEW_THREAD_ROOT;
 	public static String STACKTRACE_VIEW_TRACES_IN_GROUP;
@@ -505,15 +517,31 @@ public class Messages extends NLS {
 	public static String TABLECOMPONENT_NONE;
 	public static String ThreadDumpsPage_PAGE_NAME;
 	public static String ThreadsPage_EDIT_LANES;
+	public static String ThreadsPage_FOLD_CHART_TOOLTIP;
+	public static String ThreadsPage_FOLD_TABLE_TOOLTIP;
 	public static String ThreadsPage_HIDE_THREAD_ACTION;
+	public static String ThreadsPage_LANE_FILTER_HEADER;
 	public static String ThreadsPage_LANE_TOOLTIP_TITLE;
 	public static String ThreadsPage_NAME;
+	public static String ThreadsPage_NAME_LEGACY;
 	public static String ThreadsPage_RESET_CHART_TO_SELECTION_ACTION;
+	public static String ThreadsPage_SCROLLED_COMPOSITE_NAME;
+	public static String ThreadsPage_SHOW_CHART_TOOLTIP;
+	public static String ThreadsPage_SHOW_TABLE_TOOLTIP;
+	public static String ThreadsPage_TABLE_POPUP_DESCRIPTION;
+	public static String ThreadsPage_TABLE_POPUP_TITLE;
+	public static String ThreadsPage_VIEW_THREAD_DETAILS;
 	public static String TlabPage_PAGE_NAME;
+	public static String TlabPage_THREADS_TAB_NAME;
+	public static String TlabPage_METHODS_TAB_NAME;
 	public static String TlabPage_ROW_TLAB_ALLOCATIONS;
 	public static String TlabPage_ROW_TLAB_ALLOCATIONS_DESC;
-	public static String TlabPage_SELECTED_THREAD;
-	public static String TlabPage_SELECTED_THREADS;
+	public static String TlabPage_SELECTED_ONE;
+	public static String TlabPage_SELECTED_MANY;
+	public static String TlabPage_INSIDE_TLAB_SUM_PERCENTAGE;
+	public static String TlabPage_INSIDE_TLAB_SUM_PERCENTAGE_DESC;
+	public static String TlabPage_OUTSIDE_TLAB_SUM_PERCENTAGE;
+	public static String TlabPage_OUTSIDE_TLAB_SUM_PERCENTAGE_DESC;
 	public static String VMOPERATION_PAGE_DURATIONS_DESCRIPTION;
 	public static String VMOPERATION_PAGE_EVENT_LOG_DESCRIPTION;
 	public static String VMOPERATION_PAGE_TIMELINE_DESCRIPTION;

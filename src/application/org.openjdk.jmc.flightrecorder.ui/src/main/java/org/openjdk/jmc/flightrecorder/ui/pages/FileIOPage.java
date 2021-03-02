@@ -53,6 +53,7 @@ import org.openjdk.jmc.common.IWritableState;
 import org.openjdk.jmc.common.item.IItem;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
+import org.openjdk.jmc.common.item.ItemCollectionToolkit;
 import org.openjdk.jmc.common.item.ItemFilters;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
@@ -70,7 +71,6 @@ import org.openjdk.jmc.flightrecorder.ui.IDisplayablePage;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
 import org.openjdk.jmc.flightrecorder.ui.IPageDefinition;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
 import org.openjdk.jmc.flightrecorder.ui.common.DataPageToolkit;
@@ -116,7 +116,7 @@ public class FileIOPage extends AbstractDataPage {
 
 		@Override
 		public String[] getTopics(IState state) {
-			return new String[] {JfrRuleTopics.FILE_IO_TOPIC};
+			return new String[] {JfrRuleTopics.FILE_IO};
 		}
 
 		@Override
@@ -168,10 +168,10 @@ public class FileIOPage extends AbstractDataPage {
 		LIST.addColumn(JfrAttributes.EVENT_THREAD);
 		LIST.addColumn(JdkAttributes.IO_FILE_READ_EOF);
 
-		PERCENTILES.addSeries(PERCENTILE_READ_TIME, Messages.FileIOPage_ROW_FILE_READ,
-				PERCENTILE_READ_COUNT, JdkAggregators.FILE_READ_COUNT.getName(), JdkTypeIDs.FILE_READ);
-		PERCENTILES.addSeries(PERCENTILE_WRITE_TIME, Messages.FileIOPage_ROW_FILE_WRITE,
-				PERCENTILE_WRITE_COUNT, JdkAggregators.FILE_WRITE_COUNT.getName(), JdkTypeIDs.FILE_WRITE);
+		PERCENTILES.addSeries(PERCENTILE_READ_TIME, Messages.FileIOPage_ROW_FILE_READ, PERCENTILE_READ_COUNT,
+				JdkAggregators.FILE_READ_COUNT.getName(), JdkTypeIDs.FILE_READ);
+		PERCENTILES.addSeries(PERCENTILE_WRITE_TIME, Messages.FileIOPage_ROW_FILE_WRITE, PERCENTILE_WRITE_COUNT,
+				JdkAggregators.FILE_WRITE_COUNT.getName(), JdkTypeIDs.FILE_WRITE);
 	}
 
 	private class IOPageUi implements IPageUI {
@@ -412,7 +412,7 @@ public class FileIOPage extends AbstractDataPage {
 			IXDataRenderer sizeRoot = RendererToolkit.uniformRows(sizeRows);
 			IQuantity sizeMax = selectedItems.getAggregate(JdkAggregators.FILE_READ_LARGEST);
 			// FIXME: Workaround to make max value included
-			sizeMax = sizeMax == null ? UnitLookup.BYTE.quantity(64): sizeMax.add(UnitLookup.BYTE.quantity(64));
+			sizeMax = sizeMax == null ? UnitLookup.BYTE.quantity(64) : sizeMax.add(UnitLookup.BYTE.quantity(64));
 			XYChart sizeChart = new XYChart(UnitLookup.BYTE.quantity(0), sizeMax, sizeRoot, 180);
 			DataPageToolkit.setChart(sizeCanvas, sizeChart, JdkAttributes.IO_SIZE,
 					selection -> pageContainer.showSelection(selection));

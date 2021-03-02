@@ -78,11 +78,7 @@ class StructTypes {
 
 		@Override
 		public Long getThreadId() {
-			/*
-			 * NOTE: Parser currently creates thread ID as a quantity, which it probably shouldn't
-			 * be. See TypeManager.createFieldReader(FieldElement, String).
-			 */
-			return ((Number) javaThreadId).longValue();
+			return (Long) javaThreadId;
 		}
 
 		@Override
@@ -603,16 +599,17 @@ class StructTypes {
 
 		@Override
 		public Integer getModifier() {
-			/*
-			 * NOTE: Parser currently creates method modifier as a quantity, which it probably
-			 * shouldn't be. See TypeManager.createFieldReader(FieldElement, String).
-			 */
-			return ((Number) modifiers).intValue();
+			return (Integer) modifiers;
 		}
 
 		@Override
 		public Boolean isNative() {
 			return null;
+		}
+
+		@Override
+		public Boolean isHidden() {
+			return (Boolean) hidden;
 		}
 
 		@Override
@@ -647,20 +644,12 @@ class StructTypes {
 
 		@Override
 		public Integer getFrameLineNumber() {
-			/*
-			 * NOTE: Parser currently creates frame line number as a quantity, which it probably
-			 * shouldn't be. See TypeManager.createFieldReader(FieldElement, String).
-			 */
-			return ((Number) lineNumber).intValue();
+			return (Integer) lineNumber;
 		}
 
 		@Override
 		public Integer getBCI() {
-			/*
-			 * NOTE: Parser currently creates byte code index as a quantity, which it probably
-			 * shouldn't be. See TypeManager.createFieldReader(FieldElement, String).
-			 */
-			return ((Number) bytecodeIndex).intValue();
+			return (Integer) bytecodeIndex;
 		}
 
 		@Override

@@ -32,7 +32,6 @@
  */
 package org.openjdk.jmc.flightrecorder.ui.pages;
 
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -59,6 +58,7 @@ import org.openjdk.jmc.common.item.Aggregators;
 import org.openjdk.jmc.common.item.IAttribute;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
+import org.openjdk.jmc.common.item.ItemCollectionToolkit;
 import org.openjdk.jmc.common.item.ItemFilters;
 import org.openjdk.jmc.common.item.RangeMatchPolicy;
 import org.openjdk.jmc.common.unit.IQuantity;
@@ -76,7 +76,6 @@ import org.openjdk.jmc.flightrecorder.ui.IDisplayablePage;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
 import org.openjdk.jmc.flightrecorder.ui.IPageDefinition;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
 import org.openjdk.jmc.flightrecorder.ui.common.DataPageToolkit;
@@ -119,7 +118,7 @@ public class ClassLoadingPage extends AbstractDataPage {
 
 		@Override
 		public String[] getTopics(IState state) {
-			return new String[] {JfrRuleTopics.CLASS_LOADING_TOPIC};
+			return new String[] {JfrRuleTopics.CLASS_LOADING};
 		}
 
 		@Override
@@ -158,17 +157,17 @@ public class ClassLoadingPage extends AbstractDataPage {
 		CLASS_LOADING_LIST.addColumn(JfrAttributes.DURATION);
 		CLASS_LOADING_LIST.addColumn(JfrAttributes.END_TIME);
 		CLASS_LOADING_LIST.addColumn(JfrAttributes.EVENT_THREAD);
-		
+
 		CLASS_UNLOADING_LIST.addColumn(JfrAttributes.EVENT_TIMESTAMP);
 		CLASS_UNLOADING_LIST.addColumn(JfrAttributes.EVENT_THREAD);
 		CLASS_UNLOADING_LIST.addColumn(JdkAttributes.CLASS_UNLOADED);
 		CLASS_UNLOADING_LIST.addColumn(JdkAttributes.CLASS_DEFINING_CLASSLOADER);
-		
+
 		CLASS_DEFINE_LIST.addColumn(JfrAttributes.START_TIME);
 		CLASS_DEFINE_LIST.addColumn(JdkAttributes.CLASS_DEFINING_CLASSLOADER);
 		CLASS_DEFINE_LIST.addColumn(JdkAttributes.CLASS_DEFINED);
 		CLASS_DEFINE_LIST.addColumn(JfrAttributes.EVENT_THREAD);
-		
+
 		CLASS_LOADER_STATISTICS_LIST.addColumn(JdkAttributes.ANONYMOUS_BLOCK_SIZE);
 		CLASS_LOADER_STATISTICS_LIST.addColumn(JdkAttributes.ANONYMOUS_CHUNK_SIZE);
 		CLASS_LOADER_STATISTICS_LIST.addColumn(JdkAttributes.ANONYMOUS_CLASS_COUNT);
@@ -272,12 +271,14 @@ public class ClassLoadingPage extends AbstractDataPage {
 					TableSettings.forState(state.getChild(CLASS_LOADER_STATISTICS_TABLE)));
 			classLoaderStatisticsTable.getManager().getViewer().addSelectionChangedListener(e -> {
 				// The standard aggregators will skip the null classloader, so we need to do this manually.
-				IItemCollection selection = ItemCollectionToolkit.build(classLoaderStatisticsTable.getSelection().get());
-				Stream<IMCClassLoader> stream = ItemCollectionToolkit.values(selection, JdkAttributes.CLASSLOADER).get().distinct();
+				IItemCollection selection = ItemCollectionToolkit
+						.build(classLoaderStatisticsTable.getSelection().get());
+				Stream<IMCClassLoader> stream = selection.values(JdkAttributes.CLASSLOADER).get().distinct();
 				Set<IMCClassLoader> selected = stream.collect(Collectors.toSet());
-				IItemFilter selectionFilter =  ItemFilters.and(ItemFilters.or(JdkFilters.CLASS_LOAD_OR_UNLOAD,
-				JdkFilters.CLASS_DEFINE), ItemFilters.memberOf(JdkAttributes.CLASS_DEFINING_CLASSLOADER, selected));
- 				IItemCollection filteredItems = getDataSource().getItems().apply(selectionFilter);
+				IItemFilter selectionFilter = ItemFilters.and(
+						ItemFilters.or(JdkFilters.CLASS_LOAD_OR_UNLOAD, JdkFilters.CLASS_DEFINE),
+						ItemFilters.memberOf(JdkAttributes.CLASS_DEFINING_CLASSLOADER, selected));
+				IItemCollection filteredItems = getDataSource().getItems().apply(selectionFilter);
 				pageContainer.showSelection(filteredItems);
 				updateTables(filteredItems);
 			});
@@ -287,8 +288,9 @@ public class ClassLoadingPage extends AbstractDataPage {
 			MCContextMenuManager classLoaderStatisticsTableMm = MCContextMenuManager
 					.create(classLoaderStatisticsTable.getManager().getViewer().getControl());
 			ColumnMenusFactory.addDefaultMenus(classLoaderStatisticsTable.getManager(), classLoaderStatisticsTableMm);
-			SelectionStoreActionToolkit.addSelectionStoreActions(pageContainer.getSelectionStore(), classLoaderStatisticsTable,
-					Messages.ClassLoadingPage_CLASS_LOADER_STATISTICS_LIST_SELECTION, classLoaderStatisticsTableMm);
+			SelectionStoreActionToolkit.addSelectionStoreActions(pageContainer.getSelectionStore(),
+					classLoaderStatisticsTable, Messages.ClassLoadingPage_CLASS_LOADER_STATISTICS_LIST_SELECTION,
+					classLoaderStatisticsTableMm);
 			classLoaderStatisticsTableMm.add(classLoaderStatisticsFilter.getShowFilterAction());
 			classLoaderStatisticsTableMm.add(classLoaderStatisticsFilter.getShowSearchAction());
 			classLoaderStatisticsFilter.loadState(state.getChild(CLASS_LOADER_STATISTICS_FILTER));
@@ -314,7 +316,7 @@ public class ClassLoadingPage extends AbstractDataPage {
 			classLoadingFilter.loadState(state.getChild(CLASS_LOADING_FILTER));
 			DataPageToolkit.addTabItem(tabFolder, classLoadingFilter.getComponent(),
 					Messages.ClassLoadingPage_CLASS_LOADING_TAB_TITLE);
-			
+
 			classDefineTable = CLASS_DEFINE_LIST.buildWithoutBorder(tabFolder,
 					TableSettings.forState(state.getChild(CLASS_DEFINE_TABLE)));
 			classDefineTable.getManager().getViewer().addSelectionChangedListener(e -> pageContainer
@@ -373,8 +375,8 @@ public class ClassLoadingPage extends AbstractDataPage {
 		}
 
 		private void onHistogramFilterChange(IItemFilter filter) {
-			classloaderHistogramFilter.filterChangeHelper(filter, classloaderHistogram,
-					getDataSource().getItems().apply(ItemFilters.or(JdkFilters.CLASS_LOAD_OR_UNLOAD, JdkFilters.CLASS_DEFINE)));
+			classloaderHistogramFilter.filterChangeHelper(filter, classloaderHistogram, getDataSource().getItems()
+					.apply(ItemFilters.or(JdkFilters.CLASS_LOAD_OR_UNLOAD, JdkFilters.CLASS_DEFINE)));
 			if (classLoadingFilter != null) {
 				classLoadingFilter.notifyListener();
 			}
@@ -401,19 +403,19 @@ public class ClassLoadingPage extends AbstractDataPage {
 					getDataSource().getItems().apply(JdkFilters.CLASS_UNLOAD));
 			classUnloadTableFilter = filter;
 		}
-		
+
 		private void onClassDefineFilterChange(IItemFilter filter) {
 			classDefineFilter.filterChangeHelper(filter, classDefineTable,
 					getDataSource().getItems().apply(JdkFilters.CLASS_DEFINE));
 			classDefineTableFilter = filter;
 		}
-		
+
 		private void onClassLoaderStatisticsFilterChange(IItemFilter filter) {
 			classLoaderStatisticsFilter.filterChangeHelper(filter, classLoaderStatisticsTable,
 					getDataSource().getItems().apply(JdkFilters.CLASS_LOADER_STATISTICS));
 			classLoaderStatisticsTableFilter = filter;
 		}
-	
+
 		@Override
 		public void saveTo(IWritableState state) {
 			PersistableSashForm.saveState(sash, state.createChild(SASH));
@@ -421,7 +423,8 @@ public class ClassLoadingPage extends AbstractDataPage {
 			classLoadingTable.getManager().getSettings().saveState(state.createChild(CLASS_LOADING_TABLE));
 			classUnloadingTable.getManager().getSettings().saveState(state.createChild(CLASS_UNLOADING_TABLE));
 			classDefineTable.getManager().getSettings().saveState(state.createChild(CLASS_DEFINE_TABLE));
-			classLoaderStatisticsTable.getManager().getSettings().saveState(state.createChild(CLASS_LOADER_STATISTICS_TABLE));
+			classLoaderStatisticsTable.getManager().getSettings()
+					.saveState(state.createChild(CLASS_LOADER_STATISTICS_TABLE));
 			classloaderHistogramFilter.saveState(state.createChild(HISTOGRAM_FILTER));
 			classLoadingFilter.saveState(state.createChild(CLASS_LOADING_FILTER));
 			classUnloadingFilter.saveState(state.createChild(CLASS_UNLOADING_FILTER));

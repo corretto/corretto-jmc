@@ -64,6 +64,7 @@ import org.openjdk.jmc.flightrecorder.CouldNotLoadRecordingException;
 import org.openjdk.jmc.flightrecorder.JfrAttributes;
 import org.openjdk.jmc.flightrecorder.internal.ChunkInfo;
 import org.openjdk.jmc.flightrecorder.internal.EventArray;
+import org.openjdk.jmc.flightrecorder.internal.EventArrays;
 import org.openjdk.jmc.flightrecorder.internal.FlightRecordingLoader;
 import org.openjdk.jmc.flightrecorder.internal.NotEnoughMemoryException;
 import org.openjdk.jmc.flightrecorder.internal.VersionNotSupportedException;
@@ -93,7 +94,7 @@ public class RecordingLoader extends Job {
 		boolean closeEditor = true;
 		try {
 			File file = MCPathEditorInput.getFile(ei);
-			EventArray[] events = doCreateRecording(file, new ProgressMonitor(monitor, ui));
+			EventArrays events = doCreateRecording(file, new ProgressMonitor(monitor, ui));
 			checkForJRockitRecording(events);
 			onRecordingLoaded(events);
 			closeEditor = false;
@@ -114,10 +115,10 @@ public class RecordingLoader extends Job {
 		}
 	}
 
-	private void onRecordingLoaded(EventArray[] events) {
+	private void onRecordingLoaded(EventArrays events) {
 		IQuantity startTime = null;
 		IQuantity endTime = null;
-		for (EventArray typeEntry : events) {
+		for (EventArray typeEntry : events.getArrays()) {
 			IItem[] ea = typeEntry.getEvents();
 			IMemberAccessor<IQuantity, IItem> stAccessor = JfrAttributes.START_TIME.getAccessor(typeEntry.getType());
 			IMemberAccessor<IQuantity, IItem> etAccessor = JfrAttributes.END_TIME.getAccessor(typeEntry.getType());
@@ -159,24 +160,19 @@ public class RecordingLoader extends Job {
 		});
 	}
 
-	private EventArray[] doCreateRecording(File file, ProgressMonitor lm)
+	private EventArrays doCreateRecording(File file, ProgressMonitor lm)
 			throws CouldNotLoadRecordingException, IOException {
 		// FIXME: Can we calculate available memory without resorting to System.gc?
 		System.gc();
 		Runtime runtime = Runtime.getRuntime();
 		long availableMemory = runtime.maxMemory() - runtime.totalMemory() + runtime.freeMemory();
 		if (availableMemory > (zippedFileMemoryFactor * file.length())) { // Try load from stream
-			InputStream stream = IOToolkit.openUncompressedStream(file);
-			try {
+			try (InputStream stream = IOToolkit.openUncompressedStream(file)) {
 				boolean hideExperimentals = !FlightRecorderUI.getDefault().includeExperimentalEventsAndFields();
 				boolean ignoreTruncatedChunk = FlightRecorderUI.getDefault().allowIncompleteRecordingFile();
 				return FlightRecordingLoader.loadStream(stream, hideExperimentals, ignoreTruncatedChunk);
-			} catch (NotEnoughMemoryException e) {
+			} catch (NotEnoughMemoryException | OutOfMemoryError e) {
 				// Try to load part of the file
-			} catch (OutOfMemoryError e) {
-				// Try to load part of the file
-			} finally {
-				IOToolkit.closeSilently(stream);
 			}
 		}
 		String fileName = file.getName();
@@ -186,8 +182,8 @@ public class RecordingLoader extends Job {
 		return loadFromUnzippedFile(file, fileName, lm, availableMemory);
 	}
 
-	private static void checkForJRockitRecording(EventArray[] events) {
-		for (EventArray ea : events) {
+	private static void checkForJRockitRecording(EventArrays events) {
+		for (EventArray ea : events.getArrays()) {
 			if (ea.getType().getIdentifier().startsWith("http://www.oracle.com/jrockit/")) { //$NON-NLS-1$
 				DisplayToolkit.safeSyncExec(new Runnable() {
 					@Override
@@ -201,7 +197,7 @@ public class RecordingLoader extends Job {
 		}
 	}
 
-	private EventArray[] loadFromUnzippedFile(
+	private EventArrays loadFromUnzippedFile(
 		File unzippedFile, String recordingFileName, ProgressMonitor lm, long availableMemory)
 			throws IOException, CouldNotLoadRecordingException {
 		boolean hideExperimentals = !FlightRecorderUI.getDefault().includeExperimentalEventsAndFields();
@@ -257,12 +253,9 @@ public class RecordingLoader extends Job {
 		boolean acceptUnzip = DialogToolkit.openQuestionOnUiThread(Messages.FILE_OPENER_ZIPPED_FILE_TITLE, MessageFormat
 				.format(Messages.FILE_OPENER_ZIPPED_FILE_TEXT, file.getName(), unzippedFile.getAbsolutePath()));
 		if (acceptUnzip) {
-			InputStream is = IOToolkit.openUncompressedStream(file);
-			try {
+			try (InputStream is = IOToolkit.openUncompressedStream(file)) {
 				IOToolkit.write(is, unzippedFile, false);
 				return unzippedFile;
-			} finally {
-				IOToolkit.closeSilently(is);
 			}
 		} else {
 			throw new OperationCanceledException();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  *
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -196,6 +196,10 @@ public final class JdkTypeIDs {
 
 	public static final String MODULE_EXPORT = PREFIX + "ModuleExport";
 	public static final String MODULE_REQUIRE = PREFIX + "ModuleRequire";
-	
-	public static final String NATIVE_LIBRARY = PREFIX + "NativeLibrary";	
+
+	public static final String NATIVE_LIBRARY = PREFIX + "NativeLibrary";
+
+	public static final String HEAP_DUMP = PREFIX + "HeapDump";
+
+	public static final String PROCESS_START = PREFIX + "ProcessStart";
 }

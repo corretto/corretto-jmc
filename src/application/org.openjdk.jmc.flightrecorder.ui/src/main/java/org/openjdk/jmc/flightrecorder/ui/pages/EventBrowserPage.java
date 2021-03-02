@@ -77,11 +77,11 @@ import org.openjdk.jmc.flightrecorder.ui.IDisplayablePage;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
 import org.openjdk.jmc.flightrecorder.ui.IPageDefinition;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
 import org.openjdk.jmc.flightrecorder.ui.RuleManager;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
 import org.openjdk.jmc.flightrecorder.ui.common.DataPageToolkit;
+import org.openjdk.jmc.flightrecorder.ui.common.FilterComponent;
 import org.openjdk.jmc.flightrecorder.ui.common.FlavorSelector;
 import org.openjdk.jmc.flightrecorder.ui.common.FlavorSelector.FlavorSelectorState;
 import org.openjdk.jmc.flightrecorder.ui.common.ImageConstants;
@@ -146,6 +146,7 @@ public class EventBrowserPage extends AbstractDataPage {
 	private ISelection treeSelection;
 	public TreePath[] treeExpansion;
 	public FlavorSelectorState flavorSelectorState;
+	private IItemFilter flagsFilter;
 //	public int topIndex;
 
 	public EventBrowserPage(IPageDefinition definition, StreamModel items, IPageContainer editor) {
@@ -162,6 +163,7 @@ public class EventBrowserPage extends AbstractDataPage {
 		private static final String TREE_SASH = "treeSash"; //$NON-NLS-1$
 		private static final String ITEM_LIST = "itemList"; //$NON-NLS-1$
 		private static final String SHOW_TYPES_WITHOUT_EVENTS = "showTypesWithoutEvents"; //$NON-NLS-1$
+		private static final String LIST_FILTER = "listFilter"; //$NON-NLS-1$
 		private ItemList list;
 		private final SashForm treeSash;
 		private final IPageContainer container;
@@ -171,7 +173,10 @@ public class EventBrowserPage extends AbstractDataPage {
 		private final TypeFilterBuilder typeFilterTree;
 		private IItemCollection selectionItems;
 		private FlavorSelector flavorSelector;
+		private FilterComponent listFilter;
 		private Boolean showTypesWithoutEvents;
+		private Boolean showFilterAction;
+		private Boolean showSearchAction;
 
 		EventBrowserUI(Composite parent, FormToolkit toolkit, IState state, IPageContainer container) {
 			this.container = container;
@@ -227,6 +232,11 @@ public class EventBrowserPage extends AbstractDataPage {
 			list.getManager().setSelectionState(tableSelection);
 		}
 
+		private void onFilterChange(IItemFilter filter) {
+			listFilter.filterChangeHelper(filter, list, getFilteredItems());
+			flagsFilter = filter;
+		}
+
 		private void setTypesWithoutEvents(boolean checked) {
 			showTypesWithoutEvents = checked;
 			refreshTree();
@@ -238,22 +248,16 @@ public class EventBrowserPage extends AbstractDataPage {
 		}
 
 		private void refreshTree() {
-			boolean noTypesWereSelected = selectedTypes.isEmpty();
-
 			typeFilterTree.getViewer().getControl().setRedraw(false);
 			TreePath[] expansion = typeFilterTree.getViewer().getExpandedTreePaths();
 			ISelection selection = typeFilterTree.getViewer().getSelection();
-			typeFilterTree.setInput(getDataSource().getTypeTree((ItemCollectionToolkit.stream(selectionItems)
-					.filter(ii -> showTypesWithoutEvents || ii.hasItems()))));
+			typeFilterTree.setInput(getDataSource()
+					.getTypeTree((selectionItems.stream().filter(ii -> showTypesWithoutEvents || ii.hasItems()))));
 			typeFilterTree.getViewer().setExpandedTreePaths(expansion);
 			typeFilterTree.getViewer().setSelection(selection);
 			typeFilterTree.getViewer().getControl().setRedraw(true);
 			typeFilterTree.getViewer().getControl().redraw();
-
-			if (noTypesWereSelected) {
-				// force re-interpretation of empty type selection
-				rebuildItemList();
-			}
+			rebuildItemList();
 		}
 
 		private IItemCollection getFilteredItems() {
@@ -273,13 +277,14 @@ public class EventBrowserPage extends AbstractDataPage {
 			}
 		}
 
+		@SuppressWarnings("deprecation")
 		private void rebuildItemList() {
 			mergeListSettings();
 
 			Iterator<? extends IType<?>> types = selectedTypes.iterator();
 			IItemCollection filteredItems = getFilteredItems();
 			if (selectedTypes.isEmpty()) {
-				types = ItemCollectionToolkit.stream(selectionItems).map(is -> is.getType()).distinct().iterator();
+				types = selectionItems.stream().map(is -> is.getType()).distinct().iterator();
 			}
 
 			// FIXME: Possibly move to attribute toolkit/handler?
@@ -323,12 +328,28 @@ public class EventBrowserPage extends AbstractDataPage {
 			});
 			listColumns.addAll(0, newColumns);
 
+			saveFilterActionStates();
 			Control oldListControl = list.getManager().getViewer().getControl();
-			Composite parent = oldListControl.getParent();
-			oldListControl.dispose();
+			Composite parent = listFilter != null ? listFilter.getComponent().getParent() : oldListControl.getParent();
+			for (Control c : parent.getChildren()) {
+				c.dispose();
+			}
 			list = DataPageToolkit.createSimpleItemList(parent, itemListBuilder, container,
 					DataPageToolkit.createTableSettingsByOrderByAndColumnsWithDefaultOrdering(orderBy, listColumns),
 					Messages.EventBrowserPage_EVENT_BROWSER_SELECTION);
+			listFilter = FilterComponent.createFilterComponent(list, flagsFilter, filteredItems,
+					container.getSelectionStore()::getSelections, this::onFilterChange);
+			if (showFilterAction == null) {
+				listFilter.loadState(getState().getChild(LIST_FILTER));
+			} else {
+				loadFilterActionStates();
+			}
+			onFilterChange(flagsFilter);
+
+			MCContextMenuManager mm = list.getMenuManager();
+			mm.add(listFilter.getShowFilterAction());
+			mm.add(listFilter.getShowSearchAction());
+
 			parent.layout();
 			list.show(filteredItems);
 		}
@@ -352,12 +373,27 @@ public class EventBrowserPage extends AbstractDataPage {
 			}
 		}
 
+		private void saveFilterActionStates() {
+			if (listFilter != null) {
+				showFilterAction = listFilter.getShowFilterAction().isChecked();
+				showSearchAction = listFilter.getShowSearchAction().isChecked();
+			}
+		}
+
+		private void loadFilterActionStates() {
+			listFilter.getShowFilterAction().setChecked(showFilterAction);
+			listFilter.getShowSearchAction().setChecked(showSearchAction);
+			listFilter.getShowFilterAction().run();
+			listFilter.getShowSearchAction().run();
+		}
+
 		@Override
 		public void saveTo(IWritableState state) {
 			PersistableSashForm.saveState(treeSash, state.createChild(TREE_SASH));
 			mergeListSettings();
 			new TableSettings(listOrderBy, listColumns).saveState(state.createChild(ITEM_LIST));
 			StateToolkit.writeBoolean(state, SHOW_TYPES_WITHOUT_EVENTS, showTypesWithoutEvents);
+			listFilter.saveState(state.createChild(LIST_FILTER));
 			saveToLocal();
 		}
 

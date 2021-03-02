@@ -36,13 +36,16 @@
 	<parent>
 		<groupId>org.openjdk.jmc</groupId>
 		<artifactId>missioncontrol.application</artifactId>
-		<version>7.1.1-SNAPSHOT</version>
+		<version>8.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>org.openjdk.jmc.rcp.product</artifactId>
 	<packaging>eclipse-repository</packaging>
+
 	<properties>
 		<productName>JDK Mission Control</productName>
+		<spotless.config.path>${basedir}/../../configuration/ide/eclipse/formatting/formatting.xml</spotless.config.path>
 	</properties>
+
 	<build>
 		<plugins>
 			<plugin>
@@ -69,7 +72,9 @@
 						<product>
 							<id>org.openjdk.jmc</id>
 							<rootFolders>
+								<win32>${productName}</win32>
 								<macosx>${productName}.app</macosx>
+								<linux>${productName}</linux>
 							</rootFolders>
 						</product>
 					</products>

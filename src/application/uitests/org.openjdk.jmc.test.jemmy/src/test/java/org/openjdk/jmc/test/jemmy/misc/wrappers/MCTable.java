@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -258,8 +258,8 @@ public class MCTable extends MCJemmyBase {
 	 *            the shell to search
 	 * @param index
 	 *            the index in the list of tables
-	 * @return the {@link MCTable} representing the table at the specified index, or {@code null}
-	 *         if index is out of range
+	 * @return the {@link MCTable} representing the table at the specified index, or {@code null} if
+	 *         index is out of range
 	 */
 	@SuppressWarnings("unchecked")
 	static MCTable getByIndex(Wrap<? extends Shell> shell, int index) {
@@ -276,6 +276,19 @@ public class MCTable extends MCJemmyBase {
 	 */
 	public static MCTable getByColumnHeader(String headerName) {
 		return getByColumnHeader(getShell(), headerName);
+	}
+
+	/**
+	 * Finds tables by column header (first match only)
+	 *
+	 * @param shellText
+	 *            text to look up the shell that contains the table
+	 * @param headerName
+	 *            the name of the column header
+	 * @return a {@link MCTable}
+	 */
+	public static MCTable getByColumnHeader(String shellText, String headerName) {
+		return getByColumnHeader(getShellByText(shellText), headerName);
 	}
 
 	/**
@@ -516,6 +529,24 @@ public class MCTable extends MCJemmyBase {
 	}
 
 	/**
+	 * Gets the number of items selected in the table
+	 *
+	 * @return the number of items selected in the table
+	 */
+	public int getSelectionCount() {
+		final Table table = getWrap().getControl();
+		Fetcher<Integer> fetcher = new Fetcher<Integer>() {
+			@Override
+			public void run() {
+				int count = table.getSelectionCount();
+				setOutput(count);
+			}
+		};
+		Display.getDefault().syncExec(fetcher);
+		return fetcher.getOutput().intValue();
+	}
+
+	/**
 	 * Whether or not the table contains the text given
 	 *
 	 * @param item
@@ -732,8 +763,8 @@ public class MCTable extends MCJemmyBase {
 	}
 
 	/**
-	 * Selects the table row at a specified "start" index, and uses SHIFT+DOWN to
-	 * add to the selection up until a specified "end" index
+	 * Selects the table row at a specified "start" index, and uses SHIFT+DOWN to add to the
+	 * selection up until a specified "end" index
 	 *
 	 * @param from
 	 *            the row index to start from
@@ -744,7 +775,8 @@ public class MCTable extends MCJemmyBase {
 		focusMc();
 		select(start);
 		for (int i = 0; i < end; i++) {
-			getShell().keyboard().pushKey(KeyboardButtons.DOWN, new KeyboardModifiers[] {KeyboardModifiers.SHIFT_DOWN_MASK});
+			getShell().keyboard().pushKey(KeyboardButtons.DOWN,
+					new KeyboardModifiers[] {KeyboardModifiers.SHIFT_DOWN_MASK});
 		}
 	}
 

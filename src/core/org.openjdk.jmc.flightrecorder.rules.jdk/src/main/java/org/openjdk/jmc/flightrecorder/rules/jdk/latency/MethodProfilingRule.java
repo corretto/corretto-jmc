@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  *
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -32,7 +32,6 @@
  */
 package org.openjdk.jmc.flightrecorder.rules.jdk.latency;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,6 +66,7 @@ import org.openjdk.jmc.common.item.IItemIterable;
 import org.openjdk.jmc.common.item.IMemberAccessor;
 import org.openjdk.jmc.common.item.IType;
 import org.openjdk.jmc.common.item.ItemFilters;
+import org.openjdk.jmc.common.unit.ContentType;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.common.unit.QuantityConversionException;
@@ -81,16 +81,21 @@ import org.openjdk.jmc.flightrecorder.JfrAttributes;
 import org.openjdk.jmc.flightrecorder.jdk.JdkAttributes;
 import org.openjdk.jmc.flightrecorder.jdk.JdkFilters;
 import org.openjdk.jmc.flightrecorder.jdk.JdkTypeIDs;
+import org.openjdk.jmc.flightrecorder.rules.IResult;
+import org.openjdk.jmc.flightrecorder.rules.IResultValueProvider;
 import org.openjdk.jmc.flightrecorder.rules.IRule;
-import org.openjdk.jmc.flightrecorder.rules.Result;
+import org.openjdk.jmc.flightrecorder.rules.ResultBuilder;
+import org.openjdk.jmc.flightrecorder.rules.Severity;
+import org.openjdk.jmc.flightrecorder.rules.TypedCollectionResult;
+import org.openjdk.jmc.flightrecorder.rules.TypedResult;
 import org.openjdk.jmc.flightrecorder.rules.jdk.dataproviders.MethodProfilingDataProvider;
 import org.openjdk.jmc.flightrecorder.rules.jdk.messages.internal.Messages;
 import org.openjdk.jmc.flightrecorder.rules.util.JfrRuleTopics;
 import org.openjdk.jmc.flightrecorder.rules.util.RulesToolkit;
 import org.openjdk.jmc.flightrecorder.rules.util.RulesToolkit.EventAvailability;
+import org.openjdk.jmc.flightrecorder.rules.util.RulesToolkit.RequiredEventsBuilder;
 import org.openjdk.jmc.flightrecorder.rules.util.SlidingWindowToolkit;
 import org.openjdk.jmc.flightrecorder.rules.util.SlidingWindowToolkit.IUnorderedWindowVisitor;
-import org.owasp.encoder.Encode;
 
 /**
  * Rule that calculates the top method balance in a sliding window throughout the recording with a
@@ -102,11 +107,6 @@ public class MethodProfilingRule implements IRule {
 	 * Constant value of the maximum number of samples the JVM attempts per sampling period.
 	 */
 	private static final double SAMPLES_PER_PERIOD = 5;
-
-	/**
-	 * Constant value of the maximum number of stack frames to display for the hottest path.
-	 */
-	private static final int MAX_STACK_DEPTH = 10;
 
 	/**
 	 * A simple class for storing execution sample period settings, allowing the sliding window to
@@ -146,14 +146,18 @@ public class MethodProfilingRule implements IRule {
 		}
 	}
 
-	private static class MethodProfilingWindowResult {
-		IMCMethod method;
-		IMCStackTrace path;
-		IQuantity ratioOfAllPossibleSamples;
-		IQuantity ratioOfActualSamples;
-		IRange<IQuantity> window;
+	public static final ContentType<MethodProfilingWindowResult> METHOD_PROFILING_WINDOW_RESULT = UnitLookup
+			.createSyntheticContentType("methodProfilingWindowResult"); //$NON-NLS-1$
 
-		public MethodProfilingWindowResult(IMCMethod method, IMCStackTrace path, IQuantity ratio, IQuantity actualRatio, IRange<IQuantity> window) {
+	public static class MethodProfilingWindowResult implements IDisplayable {
+		private final IMCMethod method;
+		private final IMCStackTrace path;
+		private final IQuantity ratioOfAllPossibleSamples;
+		private final IQuantity ratioOfActualSamples;
+		private final IRange<IQuantity> window;
+
+		public MethodProfilingWindowResult(IMCMethod method, IMCStackTrace path, IQuantity ratio, IQuantity actualRatio,
+				IRange<IQuantity> window) {
 			this.method = method;
 			this.path = path;
 			this.ratioOfAllPossibleSamples = ratio;
@@ -162,12 +166,54 @@ public class MethodProfilingRule implements IRule {
 		}
 
 		@Override
-		public String toString() {
-			return FormatToolkit.getHumanReadable(method, false, false, true, true, true, false) + " (" //$NON-NLS-1$
-					+ ratioOfActualSamples.displayUsing(IDisplayable.AUTO) + " of samples) " //$NON-NLS-1$
-					+ window.displayUsing(IDisplayable.AUTO);
+		public String displayUsing(String formatHint) {
+			return FormatToolkit.getHumanReadable(getMethod(), false, false, true, true, true, false) + " (" //$NON-NLS-1$
+					+ getRatioOfActualSamples().displayUsing(formatHint) + " of samples) " //$NON-NLS-1$
+					+ getWindow().displayUsing(formatHint);
 		}
+
+		public IMCMethod getMethod() {
+			return method;
+		}
+
+		public IMCStackTrace getPath() {
+			return path;
+		}
+
+		public IQuantity getRatioOfAllPossibleSamples() {
+			return ratioOfAllPossibleSamples;
+		}
+
+		public IQuantity getRatioOfActualSamples() {
+			return ratioOfActualSamples;
+		}
+
+		public IRange<IQuantity> getWindow() {
+			return window;
+		}
+
 	}
+
+	public static final TypedResult<IMCMethod> MOST_INTERESTING_METHOD = new TypedResult<>("mostInterestingMethod", //$NON-NLS-1$
+			"Most Interesting Method", "The method that, if optimized, would likely have the most impact on CPU usage.",
+			UnitLookup.METHOD, IMCMethod.class);
+	public static final TypedResult<IMCStackTrace> MOST_INTERESTING_STACKTRACE = new TypedResult<>(
+			"mostInterestingStackTrace", "Most Interesting Stack Trace", //$NON-NLS-1$
+			"The most common stack trace amongst the available samples.", UnitLookup.STACKTRACE, IMCStackTrace.class);
+	public static final TypedResult<IQuantity> RATIO_OF_ALL_POSSIBLE_SAMPLES = new TypedResult<>(
+			"ratioOfAllPossibleSamples", "Ratio of All Possible Samples", //$NON-NLS-1$
+			"The ratio between the most interestint methods samples and all possible samples.", UnitLookup.PERCENTAGE,
+			IQuantity.class);
+	public static final TypedResult<IQuantity> RATIO_OF_ACTUAL_SAMPLES = new TypedResult<>("ratioOfSamples", //$NON-NLS-1$
+			"Ratio of Samples", "The ratio between the most interestint methods samples and all available samples.",
+			UnitLookup.PERCENTAGE, IQuantity.class);
+	public static final TypedResult<IRange<IQuantity>> MOST_INTERESTING_WINDOW = new TypedResult<>(
+			"mostInterestingWindow", "Most Interesting Time Window", //$NON-NLS-1$
+			"The time window in which the most interesting samples were found.", UnitLookup.TIMERANGE);
+	public static final TypedCollectionResult<MethodProfilingWindowResult> INTERESTING_METHODS = new TypedCollectionResult<>(
+			"interestingMethods", "Interesting Methods",
+			"Methods that, if optimized, would likely have the decent impact on CPU usage.",
+			METHOD_PROFILING_WINDOW_RESULT, MethodProfilingWindowResult.class);
 
 	private static final String RESULT_ID = "MethodProfiling"; //$NON-NLS-1$
 	public static final TypedPreference<IQuantity> WINDOW_SIZE = new TypedPreference<>(
@@ -180,48 +226,57 @@ public class MethodProfilingRule implements IRule {
 			Messages.getString(Messages.MethodProfilingRule_EXCLUDED_PACKAGES),
 			Messages.getString(Messages.MethodProfilingRule_EXCLUDED_PACKAGES_DESC),
 			UnitLookup.PLAIN_TEXT.getPersister(), "java\\.(lang|util)"); //$NON-NLS-1$
-	private static final List<TypedPreference<?>> CONFIG_ATTRIBUTES = Arrays.<TypedPreference<?>> asList(WINDOW_SIZE, EXCLUDED_PACKAGE_REGEXP);
+	private static final List<TypedPreference<?>> CONFIG_ATTRIBUTES = Arrays.<TypedPreference<?>> asList(WINDOW_SIZE,
+			EXCLUDED_PACKAGE_REGEXP);
 
 	/**
-	 * Private Callable implementation specifically used to avoid storing the FutureTask as a field.
+	 * Private {@linkplain Callable} implementation specifically used to avoid storing the
+	 * FutureTask as a field.
 	 */
-	private class MethodProfilingCallable implements Callable<Result> {
-		private FutureTask<Result> evaluationTask = null;
-		private IItemCollection items;
-		private IPreferenceValueProvider valueProvider;
+	private class MethodProfilingCallable implements Callable<IResult> {
+		private FutureTask<IResult> evaluationTask = null;
+		private final IItemCollection items;
+		private final IPreferenceValueProvider valueProvider;
+		private final IResultValueProvider resultProvider;
 
-		private MethodProfilingCallable(IItemCollection items, IPreferenceValueProvider valueProvider) {
+		private MethodProfilingCallable(IItemCollection items, IPreferenceValueProvider valueProvider,
+				IResultValueProvider resultProvider) {
 			this.items = items;
 			this.valueProvider = valueProvider;
+			this.resultProvider = resultProvider;
 		}
 
 		@Override
-		public Result call() throws Exception {
-			return getResult(items, valueProvider, evaluationTask);
+		public IResult call() throws Exception {
+			return getResult(items, valueProvider, resultProvider, evaluationTask);
 		}
 
-		void setTask(FutureTask<Result> task) {
+		void setTask(FutureTask<IResult> task) {
 			evaluationTask = task;
 		}
 	}
 
+	private static final Collection<TypedResult<?>> RESULT_ATTRIBUTES = Arrays.<TypedResult<?>> asList(
+			TypedResult.SCORE, MOST_INTERESTING_WINDOW, MOST_INTERESTING_METHOD, MOST_INTERESTING_STACKTRACE,
+			RATIO_OF_ACTUAL_SAMPLES, RATIO_OF_ALL_POSSIBLE_SAMPLES, INTERESTING_METHODS);
+
+	private static final Map<String, EventAvailability> REQUIRED_EVENTS = RequiredEventsBuilder.create()
+			.addEventType(JdkTypeIDs.EXECUTION_SAMPLE, EventAvailability.ENABLED)
+			.addEventType(JdkTypeIDs.RECORDING_SETTING, EventAvailability.AVAILABLE).build();
+
 	@Override
-	public RunnableFuture<Result> evaluate(final IItemCollection items, final IPreferenceValueProvider valueProvider) {
-		MethodProfilingCallable callable = new MethodProfilingCallable(items, valueProvider);
-		FutureTask<Result> evaluationTask = new FutureTask<>(callable);
+	public RunnableFuture<IResult> createEvaluation(
+		final IItemCollection items, final IPreferenceValueProvider valueProvider,
+		final IResultValueProvider resultProvider) {
+		MethodProfilingCallable callable = new MethodProfilingCallable(items, valueProvider, resultProvider);
+		FutureTask<IResult> evaluationTask = new FutureTask<>(callable);
 		callable.setTask(evaluationTask);
 		return evaluationTask;
 	}
 
-	private Result getResult(
-		IItemCollection items, IPreferenceValueProvider valueProvider, FutureTask<Result> evaluationTask) {
-		EventAvailability eventAvailability = RulesToolkit.getEventAvailability(items, JdkTypeIDs.EXECUTION_SAMPLE,
-				JdkTypeIDs.RECORDING_SETTING);
-		if (eventAvailability != EventAvailability.AVAILABLE) {
-			return RulesToolkit.getEventAvailabilityResult(this, items, eventAvailability, JdkTypeIDs.EXECUTION_SAMPLE,
-					JdkTypeIDs.RECORDING_SETTING);
-		}
-
+	private IResult getResult(
+		IItemCollection items, IPreferenceValueProvider valueProvider, IResultValueProvider resultProvider,
+		FutureTask<IResult> evaluationTask) {
 		PeriodRangeMap settings = new PeriodRangeMap();
 		IItemFilter settingsFilter = RulesToolkit.getSettingsFilter(RulesToolkit.REC_SETTING_NAME_PERIOD,
 				JdkTypeIDs.EXECUTION_SAMPLE);
@@ -243,7 +298,7 @@ public class MethodProfilingRule implements IRule {
 		SlidingWindowToolkit.slidingWindowUnordered(visitor, items, windowSize, slideSize);
 		// If a window visitor over a non empty quantity of events is guaranteed to always generate at minimum one raw score, this can be removed.
 		if (windowResults.isEmpty()) {
-			return RulesToolkit.getNotApplicableResult(this,
+			return RulesToolkit.getNotApplicableResult(this, valueProvider,
 					Messages.getString(Messages.HotMethodsRuleFactory_NOT_ENOUGH_SAMPLES));
 		}
 		Pair<MethodProfilingWindowResult, Map<IMCStackTrace, MethodProfilingWindowResult>> interestingMethods = getInterestingMethods(
@@ -251,46 +306,27 @@ public class MethodProfilingRule implements IRule {
 		Map<IMCStackTrace, MethodProfilingWindowResult> percentByMethod = interestingMethods.right;
 		MethodProfilingWindowResult mostInterestingResult = interestingMethods.left;
 		if (mostInterestingResult == null) { // Couldn't find any interesting methods
-			return new Result(this, 0, Messages.getString(Messages.HotMethodsRuleFactory_TEXT_OK));
+			return ResultBuilder.createFor(this, valueProvider).setSeverity(Severity.OK)
+					.setSummary(Messages.getString(Messages.HotMethodsRuleFactory_TEXT_OK)).build();
 		}
 		double mappedScore = performSigmoidMap(
-				mostInterestingResult.ratioOfAllPossibleSamples.doubleValueIn(UnitLookup.PERCENT_UNITY));
+				mostInterestingResult.getRatioOfAllPossibleSamples().doubleValueIn(UnitLookup.PERCENT_UNITY));
 
-		Result result = null;
 		if (mappedScore < 25) {
-			result = new Result(this, mappedScore, Messages.getString(Messages.HotMethodsRuleFactory_TEXT_OK));
+			return ResultBuilder.createFor(this, valueProvider).setSeverity(Severity.get(mappedScore))
+					.setSummary(Messages.getString(Messages.HotMethodsRuleFactory_TEXT_OK))
+					.addResult(TypedResult.SCORE, UnitLookup.NUMBER_UNITY.quantity(mappedScore)).build();
 		} else {
-			String shortDescription = MessageFormat.format(Messages.getString(Messages.HotMethodsRuleFactory_TEXT_INFO),
-					FormatToolkit.getHumanReadable(mostInterestingResult.method, false, false, true, false, true,
-							false),
-					mostInterestingResult.ratioOfAllPossibleSamples.displayUsing(IDisplayable.AUTO),
-					windowSize.displayUsing(IDisplayable.AUTO),
-					mostInterestingResult.ratioOfActualSamples.displayUsing(IDisplayable.AUTO));
-			String formattedPath = "<ul>" + //$NON-NLS-1$
-					FormatToolkit.getHumanReadable(mostInterestingResult.path, false, false, true, true, true, false,
-							MAX_STACK_DEPTH, null, "<li>", //$NON-NLS-1$
-							"</li>" //$NON-NLS-1$
-							) + "</ul>"; //$NON-NLS-1$
-			String longDescription = MessageFormat.format(
-					Messages.getString(Messages.HotMethodsRuleFactory_TEXT_INFO_LONG),
-					buildResultList(percentByMethod),
-					formattedPath
-					);
-			result = new Result(this, mappedScore, shortDescription, shortDescription + "<p>" + longDescription); //$NON-NLS-1$
+			return ResultBuilder.createFor(this, valueProvider).setSeverity(Severity.get(mappedScore))
+					.setSummary(Messages.getString(Messages.HotMethodsRuleFactory_TEXT_INFO))
+					.setExplanation(Messages.getString(Messages.HotMethodsRuleFactory_TEXT_INFO_LONG))
+					.addResult(MOST_INTERESTING_METHOD, mostInterestingResult.getMethod())
+					.addResult(MOST_INTERESTING_STACKTRACE, mostInterestingResult.path)
+					.addResult(MOST_INTERESTING_WINDOW, mostInterestingResult.getWindow())
+					.addResult(RATIO_OF_ACTUAL_SAMPLES, mostInterestingResult.getRatioOfActualSamples())
+					.addResult(RATIO_OF_ALL_POSSIBLE_SAMPLES, mostInterestingResult.getRatioOfAllPossibleSamples())
+					.addResult(INTERESTING_METHODS, percentByMethod.values()).build();
 		}
-		return result;
-	}
-
-	private String buildResultList(Map<IMCStackTrace, MethodProfilingWindowResult> percentByMethod) {
-		StringBuilder longList = new StringBuilder();
-		longList.append("<ul>"); //$NON-NLS-1$
-		for (Entry<IMCStackTrace, MethodProfilingWindowResult> entry : percentByMethod.entrySet()) {
-			longList.append("<li>"); //$NON-NLS-1$
-			longList.append(Encode.forHtml(entry.getValue().toString()));
-			longList.append("</li>"); //$NON-NLS-1$
-		}
-		longList.append("</ul>"); //$NON-NLS-1$
-		return longList.toString();
 	}
 
 	private Pair<MethodProfilingWindowResult, Map<IMCStackTrace, MethodProfilingWindowResult>> getInterestingMethods(
@@ -300,15 +336,16 @@ public class MethodProfilingRule implements IRule {
 		MethodProfilingWindowResult mostInterestingResult = null;
 		for (MethodProfilingWindowResult result : windowResults) {
 			if (result != null) {
-				if (result.ratioOfAllPossibleSamples.compareTo(maxRawScore) > 0) {
+				if (result.getRatioOfAllPossibleSamples().compareTo(maxRawScore) > 0) {
 					mostInterestingResult = result;
-					maxRawScore = result.ratioOfAllPossibleSamples;
+					maxRawScore = result.getRatioOfAllPossibleSamples();
 				}
-				if (result.path != null && performSigmoidMap(
-						result.ratioOfAllPossibleSamples.doubleValueIn(UnitLookup.PERCENT_UNITY)) >= 25) {
-					MethodProfilingWindowResult r = percentByMethod.get(result.path);
-					if (r == null || result.ratioOfAllPossibleSamples.compareTo(r.ratioOfAllPossibleSamples) > 0) {
-						percentByMethod.put(result.path, result);
+				if (result.getPath() != null && performSigmoidMap(
+						result.getRatioOfAllPossibleSamples().doubleValueIn(UnitLookup.PERCENT_UNITY)) >= 25) {
+					MethodProfilingWindowResult r = percentByMethod.get(result.getPath());
+					if (r == null
+							|| result.getRatioOfAllPossibleSamples().compareTo(r.getRatioOfAllPossibleSamples()) > 0) {
+						percentByMethod.put(result.getPath(), result);
 					}
 				}
 			}
@@ -340,20 +377,22 @@ public class MethodProfilingRule implements IRule {
 	 */
 	private IUnorderedWindowVisitor createWindowVisitor(
 		final PeriodRangeMap settings, final IItemFilter settingsFilter, final IQuantity windowSize,
-		final List<MethodProfilingWindowResult> rawScores, final FutureTask<Result> evaluationTask, final Pattern excludes) {
+		final List<MethodProfilingWindowResult> rawScores, final FutureTask<IResult> evaluationTask,
+		final Pattern excludes) {
 		return new IUnorderedWindowVisitor() {
 			@Override
 			public void visitWindow(IItemCollection items, IQuantity startTime, IQuantity endTime) {
 				IRange<IQuantity> windowRange = QuantityRange.createWithEnd(startTime, endTime);
 				if (RulesToolkit.getSettingMaxPeriod(items, JdkTypeIDs.EXECUTION_SAMPLE) == null) {
-					Pair<Pair<IQuantity, IQuantity>, IMCStackTrace> resultPair = performCalculation(items, settings.getSetting(startTime));
+					Pair<Pair<IQuantity, IQuantity>, IMCStackTrace> resultPair = performCalculation(items,
+							settings.getSetting(startTime));
 					if (resultPair != null) {
-						rawScores.add(new MethodProfilingWindowResult(resultPair.right.getFrames().get(0).getMethod(), resultPair.right,
-								resultPair.left.left, resultPair.left.right, windowRange));
+						rawScores.add(new MethodProfilingWindowResult(resultPair.right.getFrames().get(0).getMethod(),
+								resultPair.right, resultPair.left.left, resultPair.left.right, windowRange));
 					}
 				} else {
-					Set<IQuantity> settingTimes = items.apply(settingsFilter)
-							.getAggregate(Aggregators.distinct(JfrAttributes.START_TIME));
+					Set<IQuantity> settingTimes = items.apply(settingsFilter).getAggregate(
+							(IAggregator<Set<IQuantity>, ?>) Aggregators.distinct(JfrAttributes.START_TIME));
 					IQuantity start = startTime;
 					List<Pair<Pair<IQuantity, IQuantity>, IMCStackTrace>> scores = new ArrayList<>(settingTimes.size());
 					for (IQuantity settingTime : settingTimes) {
@@ -368,8 +407,9 @@ public class MethodProfilingRule implements IRule {
 							if (scoresByMethod.get(score.right) == null) {
 								scoresByMethod.put(score.right, score.left);
 							} else {
-								scoresByMethod.put(score.right, new Pair<>(score.left.left.add(scoresByMethod.get(score.right).left),
-										score.left.right.add(scoresByMethod.get(score.right).right)));
+								scoresByMethod.put(score.right,
+										new Pair<>(score.left.left.add(scoresByMethod.get(score.right).left),
+												score.left.right.add(scoresByMethod.get(score.right).right)));
 							}
 						}
 					}
@@ -385,7 +425,8 @@ public class MethodProfilingRule implements IRule {
 					}
 					IQuantity averageOfAllPossibleSamples = sumScore.multiply(1d / scores.size());
 					IMCMethod hottestMethod = (hottestPath == null ? null : hottestPath.getFrames().get(0).getMethod());
-					rawScores.add(new MethodProfilingWindowResult(hottestMethod, hottestPath, averageOfAllPossibleSamples, actualScore, windowRange));
+					rawScores.add(new MethodProfilingWindowResult(hottestMethod, hottestPath,
+							averageOfAllPossibleSamples, actualScore, windowRange));
 				}
 			}
 
@@ -404,7 +445,8 @@ public class MethodProfilingRule implements IRule {
 			 * @return a double value in the interval [0,1] with 1 being a system in completely
 			 *         saturated load with only one method called
 			 */
-			private Pair<Pair<IQuantity, IQuantity>, IMCStackTrace> performCalculation(IItemCollection items, IQuantity period) {
+			private Pair<Pair<IQuantity, IQuantity>, IMCStackTrace> performCalculation(
+				IItemCollection items, IQuantity period) {
 				IItemCollection filteredItems = items.apply(JdkFilters.EXECUTION_SAMPLE);
 				final IMCMethod[] maxMethod = new IMCMethod[1];
 				final IMCStackTrace[] maxPath = new IMCStackTrace[1];
@@ -419,7 +461,8 @@ public class MethodProfilingRule implements IRule {
 							}
 
 							@Override
-							public IQuantity getValue(Iterable<? extends GroupEntry<IMCStackTrace, CountConsumer>> groupEntries) {
+							public IQuantity getValue(
+								Iterable<? extends GroupEntry<IMCStackTrace, CountConsumer>> groupEntries) {
 								HashMap<IMCMethod, IQuantity> map = new HashMap<>();
 								HashMap<IMCMethod, IMCStackTrace> pathMap = new HashMap<>();
 								int total = 0;
@@ -432,25 +475,29 @@ public class MethodProfilingRule implements IRule {
 									if (!trace.getFrames().isEmpty()) {
 										IMCMethod topFrameMethod = trace.getFrames().get(0).getMethod();
 										if (map.get(topFrameMethod) == null) {
-											map.put(topFrameMethod, UnitLookup.NUMBER_UNITY.quantity(group.getConsumer().getCount()));
+											map.put(topFrameMethod,
+													UnitLookup.NUMBER_UNITY.quantity(group.getConsumer().getCount()));
 											pathMap.put(topFrameMethod, trace);
 										} else {
 											IQuantity old = map.get(topFrameMethod);
-											map.put(topFrameMethod, old.add(UnitLookup.NUMBER_UNITY.quantity(group.getConsumer().getCount())));
+											map.put(topFrameMethod, old.add(
+													UnitLookup.NUMBER_UNITY.quantity(group.getConsumer().getCount())));
 										}
 									}
 								}
 								if (!pathMap.isEmpty() && !map.isEmpty()) {
-									Entry<IMCMethod, IQuantity> topEntry = Collections.max(map.entrySet(), new Comparator<Entry<IMCMethod, IQuantity>>() {
-										@Override
-										public int compare(Entry<IMCMethod, IQuantity> arg0,
-												Entry<IMCMethod, IQuantity> arg1) {
-											return arg0.getValue().compareTo(arg1.getValue());
-										}
-									});
+									Entry<IMCMethod, IQuantity> topEntry = Collections.max(map.entrySet(),
+											new Comparator<Entry<IMCMethod, IQuantity>>() {
+												@Override
+												public int compare(
+													Entry<IMCMethod, IQuantity> arg0,
+													Entry<IMCMethod, IQuantity> arg1) {
+													return arg0.getValue().compareTo(arg1.getValue());
+												}
+											});
 									maxPath[0] = pathMap.get(topEntry.getKey());
 									maxMethod[0] = topEntry.getKey();
-									return topEntry.getValue().multiply(1d/total);
+									return topEntry.getValue().multiply(1d / total);
 								}
 								return UnitLookup.NUMBER_UNITY.quantity(0);
 							}
@@ -472,7 +519,7 @@ public class MethodProfilingRule implements IRule {
 								frames.removeAll(framesToDrop);
 								return new MCStackTrace(frames, path.getTruncationState());
 							}
-				});
+						});
 
 				IQuantity maxRatio = filteredItems.getAggregate(aggregator);
 				Pair<Pair<IQuantity, IQuantity>, IMCStackTrace> result = null;
@@ -558,7 +605,17 @@ public class MethodProfilingRule implements IRule {
 
 	@Override
 	public String getTopic() {
-		return JfrRuleTopics.METHOD_PROFILING_TOPIC;
+		return JfrRuleTopics.METHOD_PROFILING;
+	}
+
+	@Override
+	public Map<String, EventAvailability> getRequiredEvents() {
+		return REQUIRED_EVENTS;
+	}
+
+	@Override
+	public Collection<TypedResult<?>> getResults() {
+		return RESULT_ATTRIBUTES;
 	}
 
 }

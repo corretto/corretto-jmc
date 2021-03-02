@@ -116,7 +116,7 @@ public class LocalJVMToolkit {
 	static final String JVM_ARGS_PROP = "sun.jvm.args"; //$NON-NLS-1$
 	static final String JVM_FLAGS_PROP = "sun.jvm.flags"; //$NON-NLS-1$
 	static final String JAVA_COMMAND_PROP = "sun.java.command"; //$NON-NLS-1$
-	
+
 	private static final int TIMEOUT_THRESHOLD = 5;
 
 	private LocalJVMToolkit() {
@@ -212,7 +212,7 @@ public class LocalJVMToolkit {
 							StringMonitor sm = (StringMonitor) mvm.findByName("java.property.java.vm.name"); //$NON-NLS-1$
 							if (sm != null) {
 								jvmName = sm.stringValue();
-								type = getJVMType(sm.stringValue());
+								type = JVMType.getJVMType(sm.stringValue());
 							}
 
 							sm = (StringMonitor) mvm.findByName("java.property.java.version"); //$NON-NLS-1$
@@ -270,13 +270,15 @@ public class LocalJVMToolkit {
 					} catch (Exception x) {
 						// ignore
 					}
-					connDesc = createDescriptor(name, jvmArgs, jvmName, jvmVendor, vmid, connectable, type, jvmArch, address, version, isDebug);
+					connDesc = createDescriptor(name, jvmArgs, jvmName, jvmVendor, vmid, connectable, type, jvmArch,
+							address, version, isDebug);
 					return connDesc;
 				}
 			});
 			return future.get(TIMEOUT_THRESHOLD, TimeUnit.SECONDS);
 		} catch (Exception e) {
-			BrowserAttachPlugin.getPluginLogger().log(Level.WARNING, "Failed to create descriptor for jvm with PID " + vmid, e); //$NON-NLS-1$
+			BrowserAttachPlugin.getPluginLogger().log(Level.WARNING,
+					"Failed to create descriptor for jvm with PID " + vmid, e); //$NON-NLS-1$
 			return null;
 		}
 	}
@@ -311,15 +313,6 @@ public class LocalJVMToolkit {
 		return jvmArch;
 	}
 
-	private static JVMType getJVMType(String jvmName) {
-		if (JavaVMVersionToolkit.isJRockitJVMName(jvmName)) {
-			return JVMType.JROCKIT;
-		} else if (JavaVMVersionToolkit.isHotspotJVMName(jvmName)) {
-			return JVMType.HOTSPOT;
-		}
-		return JVMType.OTHER;
-	}
-
 	private static boolean isDebug(String stringValue) {
 		return stringValue.toUpperCase().contains("DEBUG"); //$NON-NLS-1$
 	}
@@ -344,7 +337,7 @@ public class LocalJVMToolkit {
 
 					if (connDesc != null && !connDesc.getServerDescriptor().getJvmInfo().isUnconnectable()) {
 						map.put(vmid, connDesc);
-					} 
+					}
 				}
 			} catch (NumberFormatException e) {
 				// do not support vmid different than pid
@@ -355,10 +348,10 @@ public class LocalJVMToolkit {
 	private static DiscoveryEntry createAttachableJvmDescriptor(VirtualMachineDescriptor vmd) {
 		try {
 			// Enforce a timeout here to ensure we don't block forever if the JVM is busy or suspended. See JMC-5398.
-			 ExecutorService service = Executors.newSingleThreadExecutor();
-			 Future<DiscoveryEntry> future = service.submit(new Callable<DiscoveryEntry>() {
-				 @Override
-				 public DiscoveryEntry call() throws Exception {
+			ExecutorService service = Executors.newSingleThreadExecutor();
+			Future<DiscoveryEntry> future = service.submit(new Callable<DiscoveryEntry>() {
+				@Override
+				public DiscoveryEntry call() throws Exception {
 					DiscoveryEntry connDesc = null;
 					Connectable connectable;
 					boolean isDebug = false;
@@ -380,6 +373,14 @@ public class LocalJVMToolkit {
 						// This leaks one thread handle due to Sun bug in j2se/src/windows/native/sun/tools/attach/WindowsVirtualMachine.c
 						Properties props = null;
 						try {
+							try {
+								// try to force finish init the attached JVM
+								// to ensure properties are correctly populated
+								// see JMC-4454 for details
+								((HotSpotVirtualMachine) vm).startLocalManagementAgent();
+							} catch (Exception ex) {
+								// swallow exceptions
+							}
 							props = vm.getSystemProperties();
 						} catch (IOException e) {
 							BrowserAttachPlugin.getPluginLogger().log(Level.FINER,
@@ -388,7 +389,7 @@ public class LocalJVMToolkit {
 						}
 						if (props != null) {
 							jvmName = props.getProperty("java.vm.name"); //$NON-NLS-1$
-							jvmType = getJVMType(jvmName);
+							jvmType = JVMType.getJVMType(jvmName);
 							version = props.getProperty("java.version"); //$NON-NLS-1$
 							jvmVersion = props.getProperty("java.vm.version"); //$NON-NLS-1$
 							jvmVendor = props.getProperty("java.vm.vendor");
@@ -409,14 +410,14 @@ public class LocalJVMToolkit {
 						}
 					}
 					if (connectable.isAttachable()) {
-						connDesc = createDescriptor(javaArgs, jvmArgs, jvmName, jvmVendor, Integer.parseInt(vmd.id()), connectable, jvmType, jvmArch,
-								address, version, isDebug);
+						connDesc = createDescriptor(javaArgs, jvmArgs, jvmName, jvmVendor, Integer.parseInt(vmd.id()),
+								connectable, jvmType, jvmArch, address, version, isDebug);
 					}
 					BrowserAttachPlugin.getPluginLogger().info("Done resolving PID " + vmd); //$NON-NLS-1$
 					return connDesc;
-				 }
-			 });
-			 return future.get(TIMEOUT_THRESHOLD, TimeUnit.SECONDS);
+				}
+			});
+			return future.get(TIMEOUT_THRESHOLD, TimeUnit.SECONDS);
 		} catch (Throwable t) {
 			// Serious problem for this JVM, let's skip this one.
 			if (!isErrorMessageSent) {

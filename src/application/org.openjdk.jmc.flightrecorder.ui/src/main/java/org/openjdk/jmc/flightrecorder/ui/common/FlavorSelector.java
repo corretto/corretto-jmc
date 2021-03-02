@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -67,7 +67,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.ui.forms.widgets.Form;
-
 import org.openjdk.jmc.common.IDisplayable;
 import org.openjdk.jmc.common.IMCThread;
 import org.openjdk.jmc.common.item.IAttribute;
@@ -246,7 +245,7 @@ public class FlavorSelector implements SelectionStoreListener {
 		Composite selectorRow = new Composite(container, SWT.NONE);
 		selectorRow
 				.setLayoutData(GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER).grab(true, false).create());
-		selectorRow.setLayout(GridLayoutFactory.swtDefaults().numColumns(9).create());
+		selectorRow.setLayout(GridLayoutFactory.swtDefaults().numColumns(10).create());
 
 //		useSelectionButton = new Button(selectorRow, SWT.CHECK);
 //		useSelectionButton.setLayoutData(GridDataFactory.swtDefaults().create());
@@ -254,6 +253,10 @@ public class FlavorSelector implements SelectionStoreListener {
 //		useSelectionButton.setEnabled(pageContainer.getSelectionStore().getSelections().count() > 0);
 //		useSelectionButton.setSelection(pageContainer.getSelectionStore().isCurrentActive());
 //		useSelectionButton.addSelectionListener(new SelectionCheckboxSelectionListener());
+
+		Label selectionLabel = new Label(selectorRow, SWT.NONE);
+		selectionLabel.setLayoutData(GridDataFactory.swtDefaults().create());
+		selectionLabel.setText(Messages.FlavorSelector_LABEL_SELECTION);
 
 		selectionCombo = new ComboViewer(selectorRow);
 		selectionCombo.getCombo().setLayoutData(GridDataFactory.swtDefaults().hint(200, SWT.DEFAULT)
@@ -301,7 +304,6 @@ public class FlavorSelector implements SelectionStoreListener {
 		sameThreadsButton.addSelectionListener(new SameThreadsSelectionListener());
 
 		// FIXME: Persist state for above checkboxes?
-
 		onShow.ifPresent(on -> {
 			Label rangeLabel = new Label(selectorRow, SWT.NONE);
 			rangeLabel.setLayoutData(GridDataFactory.swtDefaults().create());
@@ -367,10 +369,9 @@ public class FlavorSelector implements SelectionStoreListener {
 	}
 
 	public void enableSelection() {
-		boolean enabled = true;
-		pageContainer.getSelectionStore().setCurrentActive(enabled);
-		selectionCombo.getCombo().setEnabled(enabled);
-		flavorCombo.getCombo().setEnabled(enabled);
+		pageContainer.getSelectionStore().setCurrentActive(true);
+		selectionCombo.getCombo().setEnabled(true);
+		flavorCombo.getCombo().setEnabled(true);
 		// FIXME: Make sure not to call useFlavor twice during initialization.
 //		IItemStreamFlavor flavor = null;
 //		if (enabled) {
@@ -384,15 +385,14 @@ public class FlavorSelector implements SelectionStoreListener {
 	}
 
 	private IItemStreamFlavor getSelectedFlavor() {
-		IItemStreamFlavor flavor = null;
 		ISelection s = flavorCombo.getSelection();
 		if (s instanceof IStructuredSelection) {
 			Object obj = ((IStructuredSelection) s).getFirstElement();
 			if (obj instanceof IItemStreamFlavor) {
-				flavor = (IItemStreamFlavor) obj;
+				return (IItemStreamFlavor) obj;
 			}
 		}
-		return flavor;
+		return null;
 	}
 
 	private static final class SelectionComboContentProvider implements IStructuredContentProvider {

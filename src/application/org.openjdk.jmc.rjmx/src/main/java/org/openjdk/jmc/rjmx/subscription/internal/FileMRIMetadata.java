@@ -39,16 +39,14 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-
-import org.openjdk.jmc.common.io.IOToolkit;
 import org.openjdk.jmc.common.util.XmlToolkit;
 import org.openjdk.jmc.rjmx.subscription.IMRIMetadataProvider;
 import org.openjdk.jmc.rjmx.subscription.MRI;
 import org.openjdk.jmc.rjmx.subscription.MRI.Type;
 import org.openjdk.jmc.rjmx.subscription.MRIMetadataToolkit;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 /**
  * This class is used to read the default metadata from the mrimetadata.xml file.
@@ -77,9 +75,7 @@ class FileMRIMetadata {
 
 	static Map<MRI, Map<String, Object>> readDefaultsFromFile() {
 		FileMRIMetadata metadataLoader = new FileMRIMetadata();
-		InputStream is = null;
-		try {
-			is = FileMRIMetadata.class.getResourceAsStream("mrimetadata.xml"); //$NON-NLS-1$
+		try (InputStream is = FileMRIMetadata.class.getResourceAsStream("mrimetadata.xml")) { //$NON-NLS-1$
 			Document doc = XmlToolkit.loadDocumentFromStream(is);
 			List<Element> elems = XmlToolkit.getChildElementsByTag(doc.getDocumentElement(),
 					ELEMENT_METADATA_COLLECTION);
@@ -97,8 +93,6 @@ class FileMRIMetadata {
 			LOGGER.log(Level.WARNING, "Tried reading mrimetadata.xml, but an exception occurred: " + e.getMessage() //$NON-NLS-1$
 					+ "Extended information about attributes may not be available, " //$NON-NLS-1$
 					+ "and the console will not operate optimally.", e); //$NON-NLS-1$
-		} finally {
-			IOToolkit.closeSilently(is);
 		}
 		return metadataLoader.metadataMap;
 	}

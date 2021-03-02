@@ -67,6 +67,7 @@ import org.openjdk.jmc.common.IWritableState;
 import org.openjdk.jmc.common.item.Aggregators;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
+import org.openjdk.jmc.common.item.ItemCollectionToolkit;
 import org.openjdk.jmc.common.item.ItemFilters;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
@@ -83,7 +84,6 @@ import org.openjdk.jmc.flightrecorder.ui.IDisplayablePage;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
 import org.openjdk.jmc.flightrecorder.ui.IPageDefinition;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
 import org.openjdk.jmc.flightrecorder.ui.common.DataPageToolkit;
@@ -124,7 +124,7 @@ public class MemoryLeakPage extends AbstractDataPage {
 
 		@Override
 		public String[] getTopics(IState state) {
-			return new String[] {JfrRuleTopics.MEMORY_LEAK_TOPIC};
+			return new String[] {JfrRuleTopics.MEMORY_LEAK};
 		}
 
 		@Override
@@ -144,8 +144,10 @@ public class MemoryLeakPage extends AbstractDataPage {
 				if (rto.getTimestamp().compareTo(timeRange.getStart()) >= 0
 						&& rto.getTimestamp().compareTo(timeRange.getEnd()) <= 0) {
 					return true;
-				} else if (rto.getRootObject().getOldObjectSamples() != null && rto.getRootObject().getOldObjectSamples().size() > 1) {
-					for (Map.Entry<IQuantity, ReferenceTreeObject> rt : rto.getRootObject().getOldObjectSamples().entrySet()) {
+				} else if (rto.getRootObject().getOldObjectSamples() != null
+						&& rto.getRootObject().getOldObjectSamples().size() > 1) {
+					for (Map.Entry<IQuantity, ReferenceTreeObject> rt : rto.getRootObject().getOldObjectSamples()
+							.entrySet()) {
 						if (rt.getKey().compareTo(timeRange.getStart()) >= 0
 								&& rt.getKey().compareTo(timeRange.getEnd()) <= 0) {
 							return true;
@@ -276,7 +278,8 @@ public class MemoryLeakPage extends AbstractDataPage {
 						if (selectionRange == null) {
 							return object == null ? "" : Integer.toString(object.getObjectsKeptAliveCount()); //$NON-NLS-1$
 						} else {
-							return (object == null || selectionRange == null) ? "" : Integer.toString(model.getLeakCountInRange(selectionRange, object)); //$NON-NLS-1$
+							return (object == null || selectionRange == null) ? "" //$NON-NLS-1$
+									: Integer.toString(model.getLeakCountInRange(selectionRange, object));
 						}
 					};
 				}).style(SWT.RIGHT).comparator((o1, o2) -> {

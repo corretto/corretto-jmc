@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -35,58 +35,68 @@ package org.openjdk.jmc.flightrecorder.ui;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.openjdk.jmc.common.IPredicate;
 import org.openjdk.jmc.common.item.IItem;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
 import org.openjdk.jmc.common.item.IItemIterable;
 import org.openjdk.jmc.common.item.IMemberAccessor;
 import org.openjdk.jmc.common.item.IType;
+import org.openjdk.jmc.common.item.ItemCollectionToolkit;
+import org.openjdk.jmc.common.item.ItemIterableToolkit;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.common.util.PredicateToolkit;
 import org.openjdk.jmc.flightrecorder.JfrAttributes;
 import org.openjdk.jmc.flightrecorder.internal.EventArray;
+import org.openjdk.jmc.flightrecorder.internal.EventArrays;
 import org.openjdk.jmc.flightrecorder.ui.EventTypeFolderNode.TypeWithCategory;
 
 public class StreamModel {
 
 	private final EventArray[] eventsByType;
+	private final Set<IRange<IQuantity>> chunkRanges;
 
-	StreamModel(EventArray[] eventsByType) {
-		this.eventsByType = eventsByType;
+	StreamModel(EventArrays eventsByType) {
+		this.eventsByType = eventsByType.getArrays();
+		this.chunkRanges = eventsByType.getChunkTimeranges();
 	}
 
 	public IItemCollection getItems(IRange<IQuantity> range, IItemFilter filter) {
 		IItemIterable[] rangedStreams = Stream.of(eventsByType).map(ea -> {
 			IType<IItem> eventType = ea.getType();
-			IPredicate<IItem> predicate = filter.getPredicate(eventType);
+			Predicate<IItem> predicate = filter.getPredicate(eventType);
 			if (PredicateToolkit.isTrueGuaranteed(predicate)) {
 				return ItemIterableToolkit.build(itemSupplier(ea.getEvents(), eventType, range), eventType);
 			} else if (PredicateToolkit.isFalseGuaranteed(predicate)) {
 				return null;
 			} else {
-				return ItemIterableToolkit.build(itemSupplier(ea.getEvents(), eventType, range, predicate::evaluate),
+				return ItemIterableToolkit.build(itemSupplier(ea.getEvents(), eventType, range, predicate::test),
 						eventType);
 			}
 		}).filter(Objects::nonNull).toArray(IItemIterable[]::new);
-		return ItemCollectionToolkit.build(() -> Arrays.stream(rangedStreams));
+		return ItemCollectionToolkit.build(() -> Arrays.stream(rangedStreams), chunkRanges);
 	}
 
 	public IItemCollection getItems(IRange<IQuantity> range) {
-		return ItemCollectionToolkit.build(() -> Arrays.stream(eventsByType).map(ea -> ItemIterableToolkit
-				.build(() -> itemSupplier(ea.getEvents(), ea.getType(), range).get(), ea.getType())));
+		return ItemCollectionToolkit.build(
+				() -> Arrays.stream(eventsByType)
+						.map(ea -> ItemIterableToolkit
+								.build(() -> itemSupplier(ea.getEvents(), ea.getType(), range).get(), ea.getType())),
+				chunkRanges);
 	}
 
 	public IItemCollection getItems() {
-		return ItemCollectionToolkit.build(() -> Arrays.stream(eventsByType)
-				.map(ea -> ItemIterableToolkit.build(() -> Arrays.stream(ea.getEvents()), ea.getType())));
+		return ItemCollectionToolkit.build(
+				() -> Arrays.stream(eventsByType)
+						.map(ea -> ItemIterableToolkit.build(() -> Arrays.stream(ea.getEvents()), ea.getType())),
+				chunkRanges);
 	}
 
 	private static Supplier<Stream<IItem>> itemSupplier(IItem[] events, IType<IItem> ofType, IRange<IQuantity> range) {
@@ -156,6 +166,6 @@ public class StreamModel {
 	}
 
 	public EventTypeFolderNode getTypeTree() {
-		return getTypeTree(ItemCollectionToolkit.stream(getItems()));
+		return getTypeTree(getItems().stream());
 	}
 }

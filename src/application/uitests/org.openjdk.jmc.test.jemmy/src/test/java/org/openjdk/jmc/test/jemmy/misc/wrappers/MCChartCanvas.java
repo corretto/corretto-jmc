@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2019, Red Hat Inc. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Red Hat Inc. All rights reserved.
  *
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -44,6 +44,8 @@ import org.openjdk.jmc.ui.misc.ChartCanvas;
 import org.jemmy.Point;
 import org.jemmy.control.Wrap;
 import org.jemmy.input.StringPopupOwner;
+import org.jemmy.interfaces.Keyboard.KeyboardButtons;
+import org.jemmy.interfaces.Mouse.MouseButtons;
 import org.jemmy.interfaces.Parent;
 import org.jemmy.resources.StringComparePolicy;
 
@@ -65,7 +67,8 @@ public class MCChartCanvas extends MCJemmyBase {
 	 */
 	@SuppressWarnings("unchecked")
 	public static List<MCChartCanvas> getAll(Wrap<? extends Shell> shell) {
-		List<Wrap<? extends ChartCanvas>> list = getVisible(shell.as(Parent.class, ChartCanvas.class).lookup(ChartCanvas.class));
+		List<Wrap<? extends ChartCanvas>> list = getVisible(
+				shell.as(Parent.class, ChartCanvas.class).lookup(ChartCanvas.class));
 		List<MCChartCanvas> canvases = new ArrayList<>();
 		for (int i = 0; i < list.size(); i++) {
 			canvases.add(new MCChartCanvas(list.get(i)));
@@ -85,7 +88,8 @@ public class MCChartCanvas extends MCJemmyBase {
 	}
 
 	/**
-	 * Returns the first visible {@link MCChartCanvas} object underneath the Mission Control main shell
+	 * Returns the first visible {@link MCChartCanvas} object underneath the Mission Control main
+	 * shell
 	 *
 	 * @return a {@link MCChartCanvas} object
 	 */
@@ -95,6 +99,7 @@ public class MCChartCanvas extends MCJemmyBase {
 
 	/**
 	 * Clicks a specific menu item in the context menu
+	 * 
 	 * @param menuItemText
 	 *            the menu item of interest
 	 */
@@ -103,7 +108,32 @@ public class MCChartCanvas extends MCJemmyBase {
 		focusMc();
 		StringPopupOwner<Shell> contextMenu = control.as(StringPopupOwner.class);
 		contextMenu.setPolicy(StringComparePolicy.SUBSTRING);
-		contextMenu.push(getRelativeClickPoint(), new String[]{menuItemText});
+		contextMenu.push(getRelativeClickPoint(), new String[] {menuItemText});
+	}
+
+	/**
+	 * Click the center of the chart in the ChartCanvas
+	 */
+	public void clickChart() {
+		Display.getDefault().syncExec(() -> {
+			control.mouse().click(1, getRelativeClickPoint(), MouseButtons.BUTTON1);
+		});
+	}
+
+	/**
+	 * Zoom in the chart with keyboard controls
+	 */
+	public void keyboardZoomIn() {
+		control.keyboard().pushKey(KeyboardButtons.UP);
+		waitForIdle();
+	}
+
+	/**
+	 * Zoom out the chart with keyboard controls
+	 */
+	public void keyboardZoomOut() {
+		control.keyboard().pushKey(KeyboardButtons.DOWN);
+		waitForIdle();
 	}
 
 	/**
@@ -118,6 +148,22 @@ public class MCChartCanvas extends MCJemmyBase {
 	}
 
 	/**
+	 * Fetches the height of the Chart Canvas
+	 *
+	 * @return the height of the Chart Canvas
+	 */
+	public int getHeight() {
+		Fetcher<Integer> fetcher = new Fetcher<Integer>() {
+			@Override
+			public void run() {
+				setOutput(control.getControl().getParent().getSize().y);
+			}
+		};
+		Display.getDefault().syncExec(fetcher);
+		return fetcher.getOutput();
+	}
+
+	/**
 	 * Calculates the click point of the Chart Canvas
 	 *
 	 * @return the Point of the Chart Canvas
@@ -126,7 +172,8 @@ public class MCChartCanvas extends MCJemmyBase {
 		Fetcher<Point> fetcher = new Fetcher<Point>() {
 			@Override
 			public void run() {
-				setOutput(new Point(control.getScreenBounds().x / 2, control.getScreenBounds().y / 2));
+				setOutput(new Point(control.getControl().getParent().getSize().x / 2,
+						control.getControl().getParent().getSize().y / 2));
 			}
 		};
 		Display.getDefault().syncExec(fetcher);

@@ -69,6 +69,7 @@ import org.openjdk.jmc.common.item.IAttribute;
 import org.openjdk.jmc.common.item.IItem;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
+import org.openjdk.jmc.common.item.ItemCollectionToolkit;
 import org.openjdk.jmc.common.item.ItemFilters;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
@@ -88,7 +89,6 @@ import org.openjdk.jmc.flightrecorder.ui.IDisplayablePage;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
 import org.openjdk.jmc.flightrecorder.ui.IPageDefinition;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
 import org.openjdk.jmc.flightrecorder.ui.common.DataPageToolkit;
@@ -132,7 +132,7 @@ public class CodeCachePage extends AbstractDataPage {
 
 		@Override
 		public String[] getTopics(IState state) {
-			return new String[] {JfrRuleTopics.CODE_CACHE_TOPIC};
+			return new String[] {JfrRuleTopics.CODE_CACHE};
 		}
 
 		@Override
@@ -292,7 +292,7 @@ public class CodeCachePage extends AbstractDataPage {
 			chartLegend.addSelectionChangedListener(e -> buildChart());
 			ColumnViewerToolTipSupport.enableFor(chartLegend);
 			List<Object> chartSeries = new ArrayList<>();
-			JavaVersion version = RulesToolkit.getJavaVersion(getDataSource().getItems()); 
+			JavaVersion version = RulesToolkit.getJavaVersion(getDataSource().getItems());
 			if (version != null && version.isGreaterOrEqualThan(JavaVersionSupport.JDK_9)) {
 				CODE_CACHE_UNALLOCATED_SEGMENTED.getAttributes().stream().map(IAttribute::getIdentifier)
 						.forEach(chartSeries::add);

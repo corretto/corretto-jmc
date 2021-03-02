@@ -57,8 +57,6 @@ import org.openjdk.jmc.common.item.ItemToolkit;
 import org.openjdk.jmc.common.unit.LinearKindOfQuantity;
 import org.openjdk.jmc.common.util.SortedHead;
 import org.openjdk.jmc.flightrecorder.ui.FlightRecorderUI;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
-import org.openjdk.jmc.flightrecorder.ui.ItemIterableToolkit;
 import org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages;
 import org.openjdk.jmc.ui.UIPlugin;
 import org.openjdk.jmc.ui.accessibility.FocusTracker;
@@ -67,6 +65,7 @@ import org.openjdk.jmc.ui.column.ColumnManager;
 import org.openjdk.jmc.ui.column.ColumnManager.ColumnComparator;
 import org.openjdk.jmc.ui.column.IColumn;
 import org.openjdk.jmc.ui.column.TableSettings;
+import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
 
 public class ItemList {
 
@@ -75,6 +74,7 @@ public class ItemList {
 		private final List<IColumn> columns = new ArrayList<>();
 
 		public void addColumn(IAttribute<?> a) {
+			@SuppressWarnings("deprecation")
 			IMemberAccessor<?, IItem> accessor = ItemToolkit.accessor(a);
 			// FIXME: Calculate column id, e.g. using getColumnId.
 			// Otherwise there will be problem if adding multiple attributes with the same id.
@@ -105,6 +105,7 @@ public class ItemList {
 	private final SimpleArray<IItem> tail = new SimpleArray<>(new IItem[1000]);
 
 	private ExtraRowTableViewer tableViewer;
+	private MCContextMenuManager menuManager;
 
 	private ItemList(Composite container, List<IColumn> columns, TableSettings tableSettings, int style) {
 		tableViewer = new ExtraRowTableViewer(container,
@@ -138,6 +139,14 @@ public class ItemList {
 		return columnManager;
 	}
 
+	public void setMenuManager(MCContextMenuManager mm) {
+		menuManager = mm;
+	}
+
+	public MCContextMenuManager getMenuManager() {
+		return menuManager;
+	}
+
 	@SuppressWarnings("unchecked")
 	public Supplier<Stream<? extends IItem>> getSelection() {
 		List<? extends IItem> list = ((IStructuredSelection) columnManager.getViewer().getSelection()).toList();
@@ -145,7 +154,7 @@ public class ItemList {
 	}
 
 	public void show(IItemCollection items) {
-		show(ItemCollectionToolkit.stream(items).flatMap(ItemIterableToolkit::stream).iterator());
+		show(items.stream().flatMap(iterable -> iterable.stream()).iterator());
 	}
 
 	public void show(Iterator<? extends IItem> it) {
@@ -195,6 +204,16 @@ public class ItemList {
 
 	private void clearEllipsisMessage() {
 		tableViewer.setExtraMessage(null);
+	}
+
+	public void onSearchFilterChange() {
+		long numRows = tableViewer.getNumRowsDisplayed();
+		if (numRows < maxSize) {
+			clearEllipsisMessage();
+		} else {
+			setEllipsisMessage();
+		}
+		tableViewer.refresh();
 	}
 
 	/**

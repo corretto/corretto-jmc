@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--   
-   Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+   Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
    
    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
    
@@ -31,11 +31,12 @@
    WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
    WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.openjdk.jmc</groupId>
 	<artifactId>missioncontrol</artifactId>
-	<version>7.1.1-SNAPSHOT</version>
+	<version>8.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>JDK Mission Control</name>
 	<description>JDK Mission Control is an advanced set of tools that enables 
@@ -50,6 +51,7 @@
 			<name>Universal Permissive License Version 1.0</name>
 			<url>http://oss.oracle.com/licenses/upl</url>
 			<distribution>repo</distribution>
+			<comments>Copyright (c) 2018, 2021, Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.</comments>
 		</license>
 	</licenses>
 	<organization>
@@ -75,13 +77,15 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<tycho.version>1.4.0</tycho.version>
+		<tycho.version>2.0.0</tycho.version>
 		<maven.buildnumber.version>1.4</maven.buildnumber.version>
 		<maven.deploy.version>2.8.2</maven.deploy.version>
-		<maven.directory.version>0.2</maven.directory.version>
+		<maven.directory.version>0.3.1</maven.directory.version>
 		<maven.enforcer.version>3.0.0-M1</maven.enforcer.version>
-		<maven.resources.version>3.0.2</maven.resources.version>
-		<spotbugs.version>3.1.10</spotbugs.version>
+		<maven.resources.version>3.2.0</maven.resources.version>
+		<spotless.version>2.5.0</spotless.version>
+		<spotless.config.path>${basedir}/configuration/ide/eclipse/formatting/formatting.xml</spotless.config.path>
+		<spotbugs.version>4.1.4</spotbugs.version>
 		<buildId>${user.name}</buildId>
 		<!-- The version of the JDK embedded. When not embedding a JDK (this is 
 			usually the case), leave this empty. If embedding a JDK, include a comma 
@@ -90,7 +94,7 @@
 		<!-- Critical Patch Update Id. Used in a release where _only_ the embedded
 			JDK has changed. Set to .[cpu sequence number], e.g. .1 -->
 		<patchId></patchId>
-		<scmConnection>scm:hg:http://hg.openjdk.java.net/jmc/jmc</scmConnection>
+		<scmConnection>scm:git:git://github.com/openjdk/jmc.git</scmConnection>
 	</properties>
 	<scm>
 		<connection>${scmConnection}</connection>
@@ -107,7 +111,28 @@
 	</distributionManagement>
 	<profiles>
 		<profile>
-			<id>2019-09</id>
+			<id>2020-12</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>target-platform-configuration</artifactId>
+						<version>${tycho.version}</version>
+						<configuration>
+							<target>
+								<artifact>
+									<groupId>org.openjdk.jmc</groupId>
+									<artifactId>platform-definition-2020-12</artifactId>
+									<version>8.0.0-SNAPSHOT</version>
+								</artifact>
+							</target>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>2020-09</id>
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
@@ -121,8 +146,8 @@
 							<target>
 								<artifact>
 									<groupId>org.openjdk.jmc</groupId>
-									<artifactId>platform-definition-2019-09</artifactId>
-									<version>7.1.1-SNAPSHOT</version>
+									<artifactId>platform-definition-2020-09</artifactId>
+									<version>8.0.0-SNAPSHOT</version>
 								</artifact>
 							</target>
 						</configuration>
@@ -131,7 +156,7 @@
 			</build>
 		</profile>
 		<profile>
-			<id>2019-06</id>
+			<id>2020-06</id>
 			<build>
 				<plugins>
 					<plugin>
@@ -142,8 +167,8 @@
 							<target>
 								<artifact>
 									<groupId>org.openjdk.jmc</groupId>
-									<artifactId>platform-definition-2019-06</artifactId>
-									<version>7.1.1-SNAPSHOT</version>
+									<artifactId>platform-definition-2020-06</artifactId>
+									<version>8.0.0-SNAPSHOT</version>
 								</artifact>
 							</target>
 						</configuration>
@@ -152,7 +177,7 @@
 			</build>
 		</profile>
 		<profile>
-			<id>2019-03</id>
+			<id>2020-03</id>
 			<build>
 				<plugins>
 					<plugin>
@@ -163,71 +188,8 @@
 							<target>
 								<artifact>
 									<groupId>org.openjdk.jmc</groupId>
-									<artifactId>platform-definition-2019-03</artifactId>
-									<version>7.1.1-SNAPSHOT</version>
-								</artifact>
-							</target>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
-			<id>2018-12</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.eclipse.tycho</groupId>
-						<artifactId>target-platform-configuration</artifactId>
-						<version>${tycho.version}</version>
-						<configuration>
-							<target>
-								<artifact>
-									<groupId>org.openjdk.jmc</groupId>
-									<artifactId>platform-definition-2018-12</artifactId>
-									<version>7.1.1-SNAPSHOT</version>
-								</artifact>
-							</target>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
-			<id>2018-09</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.eclipse.tycho</groupId>
-						<artifactId>target-platform-configuration</artifactId>
-						<version>${tycho.version}</version>
-						<configuration>
-							<target>
-								<artifact>
-									<groupId>org.openjdk.jmc</groupId>
-									<artifactId>platform-definition-2018-09</artifactId>
-									<version>7.1.1-SNAPSHOT</version>
-								</artifact>
-							</target>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
-			<id>photon</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.eclipse.tycho</groupId>
-						<artifactId>target-platform-configuration</artifactId>
-						<version>${tycho.version}</version>
-						<configuration>
-							<target>
-								<artifact>
-									<groupId>org.openjdk.jmc</groupId>
-									<artifactId>platform-definition-photon</artifactId>
-									<version>7.1.1-SNAPSHOT</version>
+									<artifactId>platform-definition-2020-03</artifactId>
+									<version>8.0.0-SNAPSHOT</version>
 								</artifact>
 							</target>
 						</configuration>
@@ -391,8 +353,8 @@
 						<configuration>
 							<rules>
 								<requireJavaVersion>
-									<version>[1.8.0-40,)</version>
-									<message>Building JMC requires Java 8 version JDK 1.8.0_40 or later</message>
+									<version>[11,)</version>
+									<message>Building JMC requires Java 11 or later</message>
 								</requireJavaVersion>
 							</rules>
 						</configuration>
@@ -412,6 +374,19 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>${spotless.version}</version>
+				<configuration>
+					<java>
+						<eclipse>
+							<file>${spotless.config.path}</file>
+							<version>4.8.0</version>
+						</eclipse>
+					</java>
+				</configuration>
 			</plugin>
 		</plugins>
 		<pluginManagement>

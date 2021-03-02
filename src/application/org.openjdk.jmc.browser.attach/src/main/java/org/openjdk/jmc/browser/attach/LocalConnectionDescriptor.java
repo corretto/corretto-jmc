@@ -148,14 +148,7 @@ public class LocalConnectionDescriptor implements IConnectionDescriptor {
 	}
 
 	private void setAddress(String address) {
-		if (address != null) {
-			try {
-				url = new JMXServiceURL(address);
-			} catch (MalformedURLException e) {
-				BrowserAttachPlugin.getPluginLogger().log(Level.SEVERE,
-						"Could not get create service URL from a local address!", e); //$NON-NLS-1$
-			}
-		} else if (isSelfMonitoring()) {
+		if (isSelfMonitoring() || address == null) {
 			// If we're attempting to monitor ourselves, use the local
 			// JVM (since the poor agent currently may go into infinite
 			// recursion otherwise).
@@ -164,6 +157,13 @@ public class LocalConnectionDescriptor implements IConnectionDescriptor {
 			} catch (MalformedURLException e) {
 				// Not going to happen...
 				e.printStackTrace();
+			}
+		} else {
+			try {
+				url = new JMXServiceURL(address);
+			} catch (MalformedURLException e) {
+				BrowserAttachPlugin.getPluginLogger().log(Level.SEVERE,
+						"Could not get create service URL from a local address!", e); //$NON-NLS-1$
 			}
 		}
 	}
@@ -175,8 +175,7 @@ public class LocalConnectionDescriptor implements IConnectionDescriptor {
 	 * @throws IOException
 	 * @throws AttachNotSupportedException
 	 */
-	private void tryJCMDStyleStartingOfTheAgent(String name)
-			throws IOException, AgentLoadException {
+	private void tryJCMDStyleStartingOfTheAgent(String name) throws IOException, AgentLoadException {
 		try {
 			// Enforce a timeout here to ensure we don't block forever if the JVM is busy/suspended. See JMC-5398
 			ExecutorService service = Executors.newSingleThreadExecutor();
@@ -191,7 +190,8 @@ public class LocalConnectionDescriptor implements IConnectionDescriptor {
 						// Get in memory Service URL...
 						JMXServiceURL inMemURL = LocalJVMToolkit.getInMemoryURLFromPID(Integer.parseInt(name));
 						if (inMemURL == null) {
-							BrowserAttachPlugin.getPluginLogger().log(Level.SEVERE, COULD_NOT_RETRIEVE_URL_ERROR_MESSAGE);
+							BrowserAttachPlugin.getPluginLogger().log(Level.SEVERE,
+									COULD_NOT_RETRIEVE_URL_ERROR_MESSAGE);
 							throw new LazyServiceURLResolveException(COULD_NOT_RETRIEVE_URL_ERROR_MESSAGE);
 						}
 						url = inMemURL;

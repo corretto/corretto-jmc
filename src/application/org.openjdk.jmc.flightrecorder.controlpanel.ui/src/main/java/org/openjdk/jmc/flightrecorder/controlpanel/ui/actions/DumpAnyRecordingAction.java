@@ -34,8 +34,6 @@ package org.openjdk.jmc.flightrecorder.controlpanel.ui.actions;
 
 import org.eclipse.jface.wizard.IWizard;
 import org.eclipse.osgi.util.NLS;
-
-import org.openjdk.jmc.common.io.IOToolkit;
 import org.openjdk.jmc.flightrecorder.controlpanel.ui.ControlPanel;
 import org.openjdk.jmc.flightrecorder.controlpanel.ui.FlightRecorderProvider;
 import org.openjdk.jmc.flightrecorder.controlpanel.ui.ImageConstants;
@@ -62,9 +60,8 @@ public class DumpAnyRecordingAction extends AbstractWizardUserAction {
 
 	@Override
 	public IWizard doCreateWizard() throws Exception {
-		IConnectionHandle handle = null;
-		try {
-			handle = flightRecorder.getServerHandle().connect(Messages.ACTION_DUMP_ANY_RECORDING_LABEL);
+		try (IConnectionHandle handle = flightRecorder.getServerHandle()
+				.connect(Messages.ACTION_DUMP_ANY_RECORDING_LABEL)) {
 			RecordingProvider recording = flightRecorder.getSnapshotRecording(handle);
 			if (recording != null) {
 				flightRecorder.resetWarning();
@@ -77,8 +74,6 @@ public class DumpAnyRecordingAction extends AbstractWizardUserAction {
 		} catch (Exception e) {
 			flightRecorder.setWarning(e.getLocalizedMessage());
 			throw e;
-		} finally {
-			IOToolkit.closeSilently(handle);
 		}
 	}
 

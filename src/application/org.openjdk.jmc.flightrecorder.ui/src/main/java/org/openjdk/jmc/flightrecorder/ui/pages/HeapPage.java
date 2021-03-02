@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020 Oracle and/or its affiliates. All rights reserved.
  * 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -57,7 +57,9 @@ import org.openjdk.jmc.common.item.IItem;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
 import org.openjdk.jmc.common.item.IItemIterable;
+import org.openjdk.jmc.common.item.ItemCollectionToolkit;
 import org.openjdk.jmc.common.item.ItemFilters;
+import org.openjdk.jmc.common.item.ItemIterableToolkit;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.common.unit.UnitLookup;
@@ -75,8 +77,6 @@ import org.openjdk.jmc.flightrecorder.ui.IDisplayablePage;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
 import org.openjdk.jmc.flightrecorder.ui.IPageDefinition;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
-import org.openjdk.jmc.flightrecorder.ui.ItemIterableToolkit;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
 import org.openjdk.jmc.flightrecorder.ui.common.DataPageToolkit;
@@ -110,7 +110,7 @@ public class HeapPage extends AbstractDataPage {
 
 		@Override
 		public String[] getTopics(IState state) {
-			return new String[] {JfrRuleTopics.HEAP_TOPIC};
+			return new String[] {JfrRuleTopics.HEAP};
 		}
 
 		@Override
@@ -125,6 +125,7 @@ public class HeapPage extends AbstractDataPage {
 	private static final String SIZE_COL = "size"; //$NON-NLS-1$
 	private static final String INCREASE_COL = "increase"; //$NON-NLS-1$
 	private static final String ALLOCATION_COL = "allocation"; //$NON-NLS-1$
+	private static final String ALLOCATION_PERCENT_COL = "allocationPercent"; //$NON-NLS-1$
 	private static final String INSIDE_TLAB_COL = "insideTlabSize"; //$NON-NLS-1$
 	private static final String OUTSIDE_TLAB_COL = "outsideTlabSize"; //$NON-NLS-1$
 	private static final String GC_PAUSE_ID = "gcPause"; //$NON-NLS-1$
@@ -136,6 +137,8 @@ public class HeapPage extends AbstractDataPage {
 		HISTOGRAM.addColumn(SIZE_COL, JdkAggregators.OBJECT_COUNT_MAX_SIZE);
 		HISTOGRAM.addColumn(INCREASE_COL, ObjectStatisticsDataProvider.getIncreaseAggregator());
 		HISTOGRAM.addColumn(ALLOCATION_COL, JdkAggregators.ALLOCATION_TOTAL);
+		HISTOGRAM.addPercentageColumn(ALLOCATION_PERCENT_COL, JdkAggregators.ALLOCATION_TOTAL,
+				Messages.HeapPage_ALLOCATION_TOTAL_PERCENTAGE, Messages.HeapPage_ALLOCATION_TOTAL_PERCENTAGE_DESC);
 		HISTOGRAM.addColumn(INSIDE_TLAB_COL, JdkAggregators.ALLOC_INSIDE_TLAB_SUM);
 		HISTOGRAM.addColumn(OUTSIDE_TLAB_COL, JdkAggregators.ALLOC_OUTSIDE_TLAB_SUM);
 	}
@@ -150,7 +153,7 @@ public class HeapPage extends AbstractDataPage {
 
 		ObjectStatisticsUi(Composite parent, FormToolkit toolkit, IPageContainer pageContainer, IState state) {
 			super(TABLE_ITEMS, getDataSource(), parent, toolkit, pageContainer, state, getName(), tableFilter,
-					getIcon(), flavorSelectorState);
+					getIcon(), flavorSelectorState, JdkAttributes.OBJECT_CLASS);
 			tableFilterComponent.loadState(state.getChild(HEAP_FILTER));
 			addResultActions(form);
 			chart.setVisibleRange(visibleRange.getStart(), visibleRange.getEnd());
@@ -172,8 +175,8 @@ public class HeapPage extends AbstractDataPage {
 		}
 
 		@Override
-		protected ItemHistogram buildHistogram(Composite parent, IState state) {
-			return HISTOGRAM.buildWithoutBorder(parent, JdkAttributes.OBJECT_CLASS, getTableSettings(state));
+		protected ItemHistogram buildHistogram(Composite parent, IState state, IAttribute<?> classifier) {
+			return HISTOGRAM.buildWithoutBorder(parent, classifier, getTableSettings(state));
 		}
 
 		@Override
@@ -260,7 +263,8 @@ public class HeapPage extends AbstractDataPage {
 							new ColumnSettings(INSTANCES_COL, false, 120, false),
 							new ColumnSettings(SIZE_COL, false, 120, false),
 							new ColumnSettings(INCREASE_COL, false, 120, false),
-							new ColumnSettings(ALLOCATION_COL, false, 120, false)));
+							new ColumnSettings(ALLOCATION_COL, false, 120, false),
+							new ColumnSettings(ALLOCATION_PERCENT_COL, false, 120, false)));
 		} else {
 			return new TableSettings(state);
 		}

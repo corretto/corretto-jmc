@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  *
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -32,10 +32,11 @@
  */
 package org.openjdk.jmc.flightrecorder.jdk;
 
+import java.util.function.Predicate;
+
 import org.openjdk.jmc.common.IMCFrame;
 import org.openjdk.jmc.common.IMCMethod;
 import org.openjdk.jmc.common.IMCStackTrace;
-import org.openjdk.jmc.common.IPredicate;
 import org.openjdk.jmc.common.item.IItem;
 import org.openjdk.jmc.common.item.IItemFilter;
 import org.openjdk.jmc.common.item.IMemberAccessor;
@@ -79,7 +80,8 @@ public final class JdkFilters {
 			JdkTypeIDs.ALLOC_OUTSIDE_TLAB);
 	public static final IItemFilter REFERENCE_STATISTICS = ItemFilters.type(JdkTypeIDs.GC_REFERENCE_STATISTICS);
 	public static final IItemFilter GARBAGE_COLLECTION = ItemFilters.type(JdkTypeIDs.GARBAGE_COLLECTION);
-	public static final IItemFilter OLD_GARBAGE_COLLECTION = ItemFilters.type(JdkTypeIDs.GC_COLLECTOR_OLD_GARBAGE_COLLECTION);
+	public static final IItemFilter OLD_GARBAGE_COLLECTION = ItemFilters
+			.type(JdkTypeIDs.GC_COLLECTOR_OLD_GARBAGE_COLLECTION);
 	public static final IItemFilter CONCURRENT_MODE_FAILURE = ItemFilters.type(JdkTypeIDs.CONCURRENT_MODE_FAILURE);
 	public static final IItemFilter ERRORS = ItemFilters.type(JdkTypeIDs.ERRORS_THROWN);
 	public static final IItemFilter EXCEPTIONS = ItemFilters.type(JdkTypeIDs.EXCEPTIONS_THROWN);
@@ -91,7 +93,8 @@ public final class JdkFilters {
 	public static final IItemFilter CLASS_LOAD = ItemFilters.type(JdkTypeIDs.CLASS_LOAD);
 	public static final IItemFilter CLASS_LOAD_OR_UNLOAD = ItemFilters.or(CLASS_LOAD, CLASS_UNLOAD);
 	public static final IItemFilter CLASS_DEFINE = ItemFilters.type(JdkTypeIDs.CLASS_DEFINE);
-	public static final IItemFilter CLASS_LOADER_EVENTS = ItemFilters.or(CLASS_LOAD, CLASS_UNLOAD, CLASS_DEFINE, CLASS_LOADER_STATISTICS);
+	public static final IItemFilter CLASS_LOADER_EVENTS = ItemFilters.or(CLASS_LOAD, CLASS_UNLOAD, CLASS_DEFINE,
+			CLASS_LOADER_STATISTICS);
 	public static final IItemFilter MONITOR_ENTER = ItemFilters.type(JdkTypeIDs.MONITOR_ENTER);
 	public static final IItemFilter FILE_OR_SOCKET_IO = ItemFilters.type(JdkTypeIDs.SOCKET_READ,
 			JdkTypeIDs.SOCKET_WRITE, JdkTypeIDs.FILE_READ, JdkTypeIDs.FILE_WRITE);
@@ -142,7 +145,7 @@ public final class JdkFilters {
 			JdkTypeIDs.BIASED_LOCK_CLASS_REVOCATION, JdkTypeIDs.BIASED_LOCK_REVOCATION,
 			JdkTypeIDs.BIASED_LOCK_SELF_REVOCATION);
 
-	private static class MethodFilter implements IItemFilter {
+	public static class MethodFilter implements IItemFilter {
 
 		private final String typeName;
 		private final String methodName;
@@ -162,16 +165,16 @@ public final class JdkFilters {
 		}
 
 		@Override
-		public IPredicate<IItem> getPredicate(IType<IItem> type) {
+		public Predicate<IItem> getPredicate(IType<IItem> type) {
 			final IMemberAccessor<?, IItem> accessor = JfrAttributes.EVENT_STACKTRACE.getAccessor(type);
 			if (accessor == null) {
 				return PredicateToolkit.falsePredicate();
 			}
 
-			return new IPredicate<IItem>() {
+			return new Predicate<IItem>() {
 
 				@Override
-				public boolean evaluate(IItem o) {
+				public boolean test(IItem o) {
 					IMCStackTrace st = (IMCStackTrace) accessor.getMember(o);
 					if (st != null) {
 						for (IMCFrame frame : st.getFrames()) {

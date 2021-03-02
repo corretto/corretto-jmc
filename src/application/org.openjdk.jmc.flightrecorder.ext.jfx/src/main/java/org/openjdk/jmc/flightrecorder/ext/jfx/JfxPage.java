@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.ResourceLocator;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.graphics.Image;
@@ -45,14 +46,13 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Section;
-import org.eclipse.ui.plugin.AbstractUIPlugin;
-
 import org.openjdk.jmc.common.IState;
 import org.openjdk.jmc.common.IWritableState;
 import org.openjdk.jmc.common.item.Aggregators;
 import org.openjdk.jmc.common.item.IAggregator;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
+import org.openjdk.jmc.common.item.ItemCollectionToolkit;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.flightrecorder.JfrAttributes;
@@ -62,7 +62,6 @@ import org.openjdk.jmc.flightrecorder.ui.IDisplayablePage;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
 import org.openjdk.jmc.flightrecorder.ui.IPageDefinition;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
 import org.openjdk.jmc.flightrecorder.ui.common.AggregationGrid;
@@ -99,8 +98,8 @@ public class JfxPage extends AbstractDataPage {
 
 		@Override
 		public ImageDescriptor getImageDescriptor(IState state) {
-			return AbstractUIPlugin.imageDescriptorFromPlugin("org.openjdk.jmc.flightrecorder.ext.jfx", //$NON-NLS-1$
-					"icons/pulse.png"); //$NON-NLS-1$
+			return ResourceLocator.imageDescriptorFromBundle("org.openjdk.jmc.flightrecorder.ext.jfx", //$NON-NLS-1$
+					"icons/pulse.png").orElse(null); //$NON-NLS-1$
 		}
 
 		@Override
@@ -167,7 +166,7 @@ public class JfxPage extends AbstractDataPage {
 			Form form = DataPageToolkit.createForm(parent, toolkit, name, icon);
 
 			JavaFxEventAvailability availability = JfxVersionUtil.getAvailability(getItems());
-			
+
 			mainSash = new SashForm(form.getBody(), SWT.VERTICAL | SWT.SMOOTH);
 			toolkit.adapt(mainSash);
 			tableSash = new SashForm(mainSash, SWT.HORIZONTAL | SWT.SMOOTH);
@@ -176,7 +175,8 @@ public class JfxPage extends AbstractDataPage {
 			Section phases = CompositeToolkit.createSection(tableSash, toolkit, Messages.JfxPage_PHASES);
 			phasesSash = new SashForm(phases, SWT.HORIZONTAL | SWT.SMOOTH);
 			phases.setClient(phasesSash);
-			pulsesTable = BY_PULSE_HISTOGRAM.buildWithoutBorder(phasesSash, JfxVersionUtil.getPulseIdAttribute(availability),
+			pulsesTable = BY_PULSE_HISTOGRAM.buildWithoutBorder(phasesSash,
+					JfxVersionUtil.getPulseIdAttribute(availability),
 					getPulseTableSettings(state.getChild(PULSES_TABLE)));
 			pulsesFilter = FilterComponent.createFilterComponent(pulsesTable, pulsesTableFilter,
 					getItems().apply(JfxConstants.JFX_PULSE_FILTER), pageContainer.getSelectionStore()::getSelections,
@@ -191,7 +191,7 @@ public class JfxPage extends AbstractDataPage {
 			phaseList.addColumn(JfxVersionUtil.getPhaseNameAttribute(availability));
 			phaseList.addColumn(JfrAttributes.EVENT_THREAD);
 			phaseList.addColumn(JfxVersionUtil.getPulseIdAttribute(availability));
-			
+
 			phasesTable = phaseList.buildWithoutBorder(phasesSash, getPhaseListSettings(state.getChild(PHASES_TABLE)));
 			phasesFilter = FilterComponent.createFilterComponent(phasesTable, phasesTableFilter,
 					getItems().apply(JfxConstants.JFX_PULSE_FILTER), pageContainer.getSelectionStore()::getSelections,
@@ -302,8 +302,8 @@ public class JfxPage extends AbstractDataPage {
 
 		private void buildChart() {
 			List<IXDataRenderer> rows = new ArrayList<>();
-			Stream<IXDataRenderer> phaseRows = AggregationGrid.mapItems(ItemCollectionToolkit.stream(phaseItems),
-					JfrAttributes.EVENT_THREAD, JfxPage::buildThreadRenderer);
+			Stream<IXDataRenderer> phaseRows = AggregationGrid.mapItems(phaseItems.stream(), JfrAttributes.EVENT_THREAD,
+					JfxPage::buildThreadRenderer);
 			phaseRows.forEach(rows::add);
 
 			HistogramSelection inputSelection = inputTable.getSelection();
@@ -376,7 +376,8 @@ public class JfxPage extends AbstractDataPage {
 		// Attribute only used for looking up color and name information here
 		IXDataRenderer phaseRenderer = DataPageToolkit.buildSpanRenderer(items,
 				DataPageToolkit.getAttributeValueColor(JfxConstants.ATTRIBUTE_PHASE_NAME_12));
-		return new ItemRow(String.valueOf(threadName), JfxConstants.ATTRIBUTE_PHASE_NAME_12.getDescription(), phaseRenderer, items);
+		return new ItemRow(String.valueOf(threadName), JfxConstants.ATTRIBUTE_PHASE_NAME_12.getDescription(),
+				phaseRenderer, items);
 	}
 
 	private static TableSettings getPulseTableSettings(IState state) {

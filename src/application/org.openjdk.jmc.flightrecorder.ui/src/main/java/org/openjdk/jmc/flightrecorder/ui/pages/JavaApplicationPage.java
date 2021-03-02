@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020 Oracle and/or its affiliates. All rights reserved.
  * 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -53,8 +53,10 @@ import org.openjdk.jmc.common.IState;
 import org.openjdk.jmc.common.IWritableState;
 import org.openjdk.jmc.common.item.Aggregators;
 import org.openjdk.jmc.common.item.IAggregator;
+import org.openjdk.jmc.common.item.IAttribute;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
+import org.openjdk.jmc.common.item.ItemCollectionToolkit;
 import org.openjdk.jmc.common.item.ItemFilters;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
@@ -73,7 +75,6 @@ import org.openjdk.jmc.flightrecorder.ui.IDisplayablePage;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
 import org.openjdk.jmc.flightrecorder.ui.IPageDefinition;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
 import org.openjdk.jmc.flightrecorder.ui.common.DataPageToolkit;
@@ -114,7 +115,7 @@ public class JavaApplicationPage extends AbstractDataPage {
 
 		@Override
 		public String[] getTopics(IState state) {
-			return new String[] {JfrRuleTopics.JAVA_APPLICATION_TOPIC, JfrRuleTopics.METHOD_PROFILING_TOPIC};
+			return new String[] {JfrRuleTopics.JAVA_APPLICATION, JfrRuleTopics.METHOD_PROFILING};
 		}
 
 		@Override
@@ -220,7 +221,7 @@ public class JavaApplicationPage extends AbstractDataPage {
 
 		JavaApplicationUi(Composite parent, FormToolkit toolkit, IPageContainer pageContainer, IState state) {
 			super(ALL_THREAD_EVENTS, getDataSource(), parent, toolkit, pageContainer, state, getName(), tableFilter,
-					getIcon(), flavorSelectorState);
+					getIcon(), flavorSelectorState, JfrAttributes.EVENT_THREAD);
 			mm = (MCContextMenuManager) chartCanvas.getContextMenu();
 
 			// FIXME: The lanes field is initialized by initializeChartConfiguration which is called by the super constructor. This is too indirect for SpotBugs to resolve and should be simplified.
@@ -231,7 +232,8 @@ public class JavaApplicationPage extends AbstractDataPage {
 			addResultActions(form);
 			tableFilterComponent.loadState(state.getChild(METHOD_PROFILING_TABLE_FILTER));
 			form.getToolBarManager()
-					.add(ActionToolkit.action(() -> lanes.openEditLanesDialog(mm, false), Messages.ThreadsPage_EDIT_LANES,
+					.add(ActionToolkit.action(() -> lanes.openEditLanesDialog(mm, false),
+							Messages.ThreadsPage_EDIT_LANES,
 							FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_LANES_EDIT)));
 			form.getToolBarManager().add(new Separator());
 			OrientationAction.installActions(form, sash);
@@ -242,9 +244,8 @@ public class JavaApplicationPage extends AbstractDataPage {
 		}
 
 		@Override
-		protected ItemHistogram buildHistogram(Composite parent, IState state) {
-			ItemHistogram build = HISTOGRAM.buildWithoutBorder(parent, JfrAttributes.EVENT_THREAD,
-					TableSettings.forState(state));
+		protected ItemHistogram buildHistogram(Composite parent, IState state, IAttribute<?> classifier) {
+			ItemHistogram build = HISTOGRAM.buildWithoutBorder(parent, classifier, TableSettings.forState(state));
 			return build;
 		}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  *
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -47,6 +47,7 @@ import static org.openjdk.jmc.common.unit.DecimalPrefix.YOCTO;
 import static org.openjdk.jmc.common.unit.DecimalPrefix.YOTTA;
 
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -265,7 +266,7 @@ final public class UnitLookup {
 		return Logger.getLogger("org.openjdk.jmc.common.unit");
 	}
 
-	private static <T> ContentType<T> createSyntheticContentType(String id) {
+	public static <T> ContentType<T> createSyntheticContentType(String id) {
 		ContentType<T> contentType = new ContentType<>(id);
 		contentType.addFormatter(new DisplayFormatter<>(contentType, IDisplayable.AUTO, "Default"));
 		return contentType;
@@ -448,7 +449,7 @@ final public class UnitLookup {
 
 		return memory;
 	}
-	
+
 	private static LinearKindOfQuantity createFrequency() {
 		LinearKindOfQuantity frequency = new LinearKindOfQuantity("frequency", "Hz", EnumSet.range(NONE, TERA),
 				EnumSet.range(YOCTO, YOTTA));
@@ -481,7 +482,7 @@ final public class UnitLookup {
 		// The Julian year (annum, symbol "a") is defined by UCUM for use with SI, since it is the basis for the light year (so this is exact).
 		LinearUnit year = timeSpan.makeUnit("a", hour.quantity(8766));
 		// A mean Julian month is 1/12 of a Julian year = 365.25*24/12 h = 730.5 h = 43 830 min (exactly).
-//		LinearUnit month = timeSpan.makeUnit("mo", minute.quantity(43830));
+		// LinearUnit month = timeSpan.makeUnit("mo", minute.quantity(43830));
 
 		LinearUnit[] units = {minute, hour, day, week, year};
 		for (LinearUnit unit : units) {
@@ -512,6 +513,16 @@ final public class UnitLookup {
 		return timeSpan;
 	}
 
+	static DateFormat patchTimestamp(DateFormat df) {
+		if (df instanceof SimpleDateFormat) {
+			SimpleDateFormat sdf = (SimpleDateFormat) df;
+			String pattern = sdf.toPattern();
+			String newPattern = pattern.replaceFirst("s{2,4}", "ss.SSS"); //$NON-NLS-1$ //$NON-NLS-2$
+			sdf.applyPattern(newPattern);
+		}
+		return df;
+	}
+
 	private static TimestampKind createTimestamp(LinearKindOfQuantity timespan) {
 		TimestampKind timestampContentType = TimestampKind.buildContentType(timespan);
 		timestampContentType
@@ -521,7 +532,9 @@ final public class UnitLookup {
 						try {
 							// NOTE: This used to return the floor value.
 							Date date = new Date(quantity.longValueIn(TimestampKind.MILLIS_UNIT));
-							return DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(date);
+							DateFormat df = patchTimestamp(
+									DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM));
+							return df.format(date);
 						} catch (QuantityConversionException e) {
 							return Messages.getString(Messages.UnitLookup_TIMESTAMP_OUT_OF_RANGE);
 						}

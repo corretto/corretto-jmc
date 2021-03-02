@@ -58,14 +58,21 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
-import org.openjdk.jmc.common.messages.internal.Messages;
+import net.jpountz.lz4.LZ4FrameInputStream;
 
 /**
  * Common functionality you might want when you're working with I/O.
  */
 public final class IOToolkit {
-	private static final int ZIP_MAGIC[] = new int[] {80, 75, 3, 4};
-	private static final int GZ_MAGIC[] = new int[] {31, 139};
+	/**
+	 * Magic bytes for recognizing Zip.
+	 */
+	private static final int MAGIC_ZIP[] = new int[] {80, 75, 3, 4};
+
+	/**
+	 * Magic bytes for recognizing GZip.
+	 */
+	private static final int MAGIC_GZ[] = new int[] {31, 139};
 
 	/**
 	 * Magic bytes for recognizing LZ4.
@@ -94,8 +101,8 @@ public final class IOToolkit {
 	}
 
 	/**
-	 * Get an input stream for a optionally compressed file. If the file is compressed using either
-	 * GZip or ZIP then an appropriate unpacking will be done.
+	 * Get an input stream for a optionally compressed file. If the file is compressed using GZip,
+	 * ZIP or LZ4, then an appropriate unpacking will be done.
 	 *
 	 * @param file
 	 *            file to read from
@@ -107,15 +114,14 @@ public final class IOToolkit {
 		FileInputStream fin = new FileInputStream(file);
 		try {
 			InputStream in = new BufferedInputStream(fin);
-			if (hasMagic(file, GZ_MAGIC)) {
+			if (hasMagic(file, MAGIC_GZ)) {
 				return new GZIPInputStream(in);
-			} else if (hasMagic(file, ZIP_MAGIC)) {
+			} else if (hasMagic(file, MAGIC_ZIP)) {
 				ZipInputStream zin = new ZipInputStream(in);
 				zin.getNextEntry();
 				return zin;
 			} else if (hasMagic(file, MAGIC_LZ4)) {
-				throw new UnsupportedFormatException(
-						Messages.getString(Messages.UnsupportedFormatException_LZ4_NOT_SUPPORTED)); //$NON-NLS-1$
+				return new LZ4FrameInputStream(in);
 			}
 			return in;
 		} catch (RuntimeException e) {
@@ -131,8 +137,8 @@ public final class IOToolkit {
 	}
 
 	/**
-	 * Get an input stream for a optionally compressed input stream. If the input stream is
-	 * compressed using either GZip or ZIP then an appropriate unpacking will be done.
+	 * Get an input stream for a optionally compressed input stream. If the file is compressed using
+	 * GZip, ZIP or LZ4, then an appropriate unpacking will be done.
 	 *
 	 * @param stream
 	 *            input stream to read from
@@ -142,27 +148,29 @@ public final class IOToolkit {
 	 */
 	public static InputStream openUncompressedStream(InputStream stream) throws IOException {
 		InputStream in = stream;
-		if (!in.markSupported()) {
-			in = new BufferedInputStream(stream);
-		}
-		in.mark(GZ_MAGIC.length + 1);
-		if (hasMagic(in, GZ_MAGIC)) {
+		if (in.markSupported()) {
+			in.mark(MAGIC_GZ.length + 1);
+			if (hasMagic(in, MAGIC_GZ)) {
+				in.reset();
+				return new GZIPInputStream(in);
+			}
 			in.reset();
-			return new GZIPInputStream(in);
-		}
-		in.reset();
-		in.mark(ZIP_MAGIC.length + 1);
-		if (hasMagic(in, ZIP_MAGIC)) {
+			in.mark(MAGIC_ZIP.length + 1);
+			if (hasMagic(in, MAGIC_ZIP)) {
+				in.reset();
+				ZipInputStream zin = new ZipInputStream(in);
+				zin.getNextEntry();
+				return zin;
+			}
 			in.reset();
-			ZipInputStream zin = new ZipInputStream(in);
-			zin.getNextEntry();
-			return zin;
+			in.mark(MAGIC_LZ4.length + 1);
+			if (hasMagic(in, MAGIC_LZ4)) {
+				in.reset();
+				return new LZ4FrameInputStream(in);
+			}
+			in.reset();
 		}
-		if (hasMagic(in, MAGIC_LZ4)) {
-			throw new UnsupportedFormatException(
-					Messages.getString(Messages.UnsupportedFormatException_LZ4_NOT_SUPPORTED)); //$NON-NLS-1$
-		}
-		in.reset();
+		in = new BufferedInputStream(stream);
 		return in;
 	}
 
@@ -178,12 +186,8 @@ public final class IOToolkit {
 	 *             if an error occurred when trying to read from the file
 	 */
 	public static boolean hasMagic(File file, int[] magic) throws IOException {
-		FileInputStream fis = null;
-		try {
-			fis = new FileInputStream(file);
+		try (FileInputStream fis = new FileInputStream(file)) {
 			return hasMagic(fis, magic);
-		} finally {
-			closeSilently(fis);
 		}
 	}
 
@@ -219,7 +223,20 @@ public final class IOToolkit {
 	 *             if an error occurred when trying to read from the file
 	 */
 	public static boolean isGZipFile(File file) throws IOException {
-		return hasMagic(file, GZ_MAGIC);
+		return hasMagic(file, MAGIC_GZ);
+	}
+
+	/**
+	 * Returns true if the file is LZ4 compressed.
+	 *
+	 * @param file
+	 *            the file to examine
+	 * @return {@code true} if it is an LZ4 compressed file, {@code false} otherwise
+	 * @throws IOException
+	 *             if an error occurred when trying to read from the file
+	 */
+	public static boolean isLZ4File(File file) throws IOException {
+		return hasMagic(file, MAGIC_LZ4);
 	}
 
 	/**
@@ -232,7 +249,37 @@ public final class IOToolkit {
 	 *             if an error occurred when trying to read from the file
 	 */
 	public static boolean isZipFile(File file) throws IOException {
-		return hasMagic(file, ZIP_MAGIC);
+		return hasMagic(file, MAGIC_ZIP);
+	}
+
+	/**
+	 * Returns the magic bytes for identifying Gzip. This is a defensive copy. It's up to the user
+	 * to cache this to avoid excessive allocations.
+	 * 
+	 * @return a copy of the magic bytes for Gzip.
+	 */
+	public static int[] getGzipMagic() {
+		return MAGIC_GZ.clone();
+	}
+
+	/**
+	 * Returns the magic bytes for identifying Zip. This is a defensive copy. It's up to the user to
+	 * cache this to avoid excessive allocations.
+	 * 
+	 * @return a copy of the magic bytes for Zip.
+	 */
+	public static int[] getZipMagic() {
+		return MAGIC_ZIP.clone();
+	}
+
+	/**
+	 * Returns the magic bytes for identifying LZ4. This is a defensive copy. It's up to the user to
+	 * cache this to avoid excessive allocations.
+	 * 
+	 * @return a copy of the magic bytes for LZ4.
+	 */
+	public static int[] getLz4Magic() {
+		return MAGIC_LZ4.clone();
 	}
 
 	/**
@@ -247,17 +294,18 @@ public final class IOToolkit {
 	 *             if an error occurred when trying to read from the file
 	 */
 	public static boolean isCompressedFile(File file) throws IOException {
-		BufferedInputStream is = null;
-		try {
-			is = new BufferedInputStream(new FileInputStream(file), ZIP_MAGIC.length + 1);
-			is.mark(ZIP_MAGIC.length + 1);
-			if (hasMagic(is, GZ_MAGIC)) {
+		try (BufferedInputStream is = new BufferedInputStream(new FileInputStream(file), MAGIC_ZIP.length + 1)) {
+			is.mark(MAGIC_ZIP.length + 1);
+			if (hasMagic(is, MAGIC_GZ)) {
 				return true;
 			}
 			is.reset();
-			return hasMagic(is, ZIP_MAGIC);
-		} finally {
-			closeSilently(is);
+			if (hasMagic(is, MAGIC_ZIP)) {
+				return true;
+			}
+			;
+			is.reset();
+			return hasMagic(is, MAGIC_LZ4);
 		}
 	}
 
@@ -272,23 +320,19 @@ public final class IOToolkit {
 	 *             on I/O error
 	 */
 	public static List<String> loadFromFile(File file) throws IOException {
-		FileReader fr = new FileReader(file);
-		try {
+		try (FileReader fr = new FileReader(file)) {
 			return loadFromReader(fr);
-		} catch (IOException e) {
-			throw e;
-		} finally {
-			closeSilently(fr);
 		}
 	}
 
 	private static List<String> loadFromReader(Reader reader) throws IOException {
 		List<String> lines = new ArrayList<>();
-		BufferedReader br = new BufferedReader(reader);
-		while (br.ready()) {
-			lines.add(br.readLine());
+		try (BufferedReader br = new BufferedReader(reader)) {
+			while (br.ready()) {
+				lines.add(br.readLine());
+			}
+			return lines;
 		}
-		return lines;
 	}
 
 	/**
@@ -303,14 +347,10 @@ public final class IOToolkit {
 	 *             on I/O error
 	 */
 	public static void saveToFile(File file, List<String> lines) throws IOException {
-		PrintWriter pr = null;
-		try {
-			pr = new PrintWriter(new FileWriter(file));
+		try (PrintWriter pr = new PrintWriter(new FileWriter(file))) {
 			for (String line : lines) {
 				pr.println(line);
 			}
-		} finally {
-			closeSilently(pr);
 		}
 	}
 
@@ -325,10 +365,9 @@ public final class IOToolkit {
 	 *             on I/O error
 	 */
 	public static List<String> loadFromStream(InputStream is) throws IOException {
-		try {
+		try (BufferedInputStream bis = new BufferedInputStream(is);
+				BufferedReader r = new BufferedReader(new InputStreamReader(bis))) {
 			List<String> lines = new ArrayList<>();
-			BufferedInputStream bis = new BufferedInputStream(is);
-			BufferedReader r = new BufferedReader(new InputStreamReader(bis));
 			while (r.ready()) {
 				lines.add(r.readLine());
 			}
@@ -352,14 +391,9 @@ public final class IOToolkit {
 	 *             on I/O error
 	 */
 	public static void write(InputStream in, File toOutput, boolean append) throws IOException {
-		FileOutputStream fos = new FileOutputStream(toOutput, append);
-		BufferedOutputStream os = null;
-		try {
-			os = new BufferedOutputStream(fos);
+		try (FileOutputStream fos = new FileOutputStream(toOutput, append);
+				BufferedOutputStream os = new BufferedOutputStream(fos)) {
 			copy(in, os);
-		} finally {
-			closeSilently(os);
-			closeSilently(fos);
 		}
 	}
 
@@ -424,8 +458,7 @@ public final class IOToolkit {
 	 *             if something goes wrong when reading file data
 	 */
 	public static String calculateFileHash(File file) throws IOException {
-		RandomAccessFile raf = new RandomAccessFile(file, "r"); //$NON-NLS-1$
-		try {
+		try (RandomAccessFile raf = new RandomAccessFile(file, "r")) { //$NON-NLS-1$
 			long seek = raf.length() / 10;
 			byte[] buffer = new byte[1024];
 			MessageDigest hash = MessageDigest.getInstance("MD5"); //$NON-NLS-1$
@@ -437,8 +470,6 @@ public final class IOToolkit {
 			return new BigInteger(1, hash.digest()).toString();
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException(e);
-		} finally {
-			closeSilently(raf);
 		}
 	}
 }

@@ -87,7 +87,9 @@ public abstract class MetadataTestBase extends MCJemmyTestBase {
 				ConnectionHelper.is8u0orLater(TEST_CONNECTION));
 		doRecording();
 
-		if (ConnectionHelper.is9u0EAorLater(TEST_CONNECTION)) {
+		if (ConnectionHelper.is11orLater(TEST_CONNECTION)) {
+			handleRecording(BASELINE_JFR_FILE + "11");
+		} else if (ConnectionHelper.is9u0EAorLater(TEST_CONNECTION)) {
 			handleRecording(BASELINE_JFR_FILE + "9");
 		} else {
 			handleRecording(BASELINE_JFR_FILE + "8");
@@ -168,8 +170,10 @@ public abstract class MetadataTestBase extends MCJemmyTestBase {
 
 	protected void copyFile(File sourceFile, File destFile) {
 		prepareFile(destFile);
-		try (FileChannel source = new FileInputStream(sourceFile).getChannel();
-				FileChannel destination = new FileOutputStream(destFile).getChannel()) {
+		try (FileInputStream sourceFis = new FileInputStream(sourceFile);
+				FileOutputStream destinationFos = new FileOutputStream(destFile);
+				FileChannel source = sourceFis.getChannel();
+				FileChannel destination = destinationFos.getChannel()) {
 			destination.transferFrom(source, 0, source.size());
 		} catch (IOException e) {
 			e.printStackTrace();

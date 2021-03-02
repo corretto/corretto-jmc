@@ -38,7 +38,7 @@ import org.openjdk.jmc.rjmx.services.ICommercialFeaturesService;
  * Used by JVMs with no commercial features, e.g. OpenJDK 8 and JDK 11+ JVMs.
  */
 public class NoCommercialFeaturesService implements ICommercialFeaturesService {
-	
+
 	@Override
 	public boolean isCommercialFeaturesEnabled() {
 		return true;

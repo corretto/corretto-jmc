@@ -97,7 +97,7 @@ public class JVMInformationPage extends AbstractDataPage {
 
 		@Override
 		public String[] getTopics(IState state) {
-			return new String[] {JfrRuleTopics.JVM_INFORMATION_TOPIC};
+			return new String[] {JfrRuleTopics.JVM_INFORMATION};
 		}
 
 		@Override
@@ -134,7 +134,6 @@ public class JVMInformationPage extends AbstractDataPage {
 		types.add(JdkTypeIDs.UINT_FLAG_CHANGED);
 		FLAGS_LOG = Collections.unmodifiableSet(types);
 	}
-
 
 	private static final IItemFilter FLAGS_FILTER = ItemFilters.type(FLAGS);
 
@@ -251,7 +250,8 @@ public class JVMInformationPage extends AbstractDataPage {
 			allFlagsFilter = FilterComponent.createFilterComponent(allFlagsTable, flagsFilter,
 					getDataSource().getItems().apply(FLAGS_FILTER), pageContainer.getSelectionStore()::getSelections,
 					this::onFlagsFilterChange);
-			MCContextMenuManager flagsMm = MCContextMenuManager.create(allFlagsTable.getManager().getViewer().getControl());
+			MCContextMenuManager flagsMm = MCContextMenuManager
+					.create(allFlagsTable.getManager().getViewer().getControl());
 			ColumnMenusFactory.addDefaultMenus(allFlagsTable.getManager(), flagsMm);
 			flagsMm.add(allFlagsFilter.getShowFilterAction());
 			flagsMm.add(allFlagsFilter.getShowSearchAction());
@@ -267,10 +267,9 @@ public class JVMInformationPage extends AbstractDataPage {
 					new TableSettings(state.getChild(JVM_FLAGS_LOG)));
 			allFlagsLogFilter = FilterComponent.createFilterComponent(allFlagsLogTable, flagsLogFilter,
 					getDataSource().getItems().apply(FLAGS_LOG_FILTER),
-					pageContainer.getSelectionStore()::getSelections,
-					this::onFlagsLogFilterChange);
-			MCContextMenuManager flagsLogMm = MCContextMenuManager.create(
-					allFlagsLogTable.getManager().getViewer().getControl());
+					pageContainer.getSelectionStore()::getSelections, this::onFlagsLogFilterChange);
+			MCContextMenuManager flagsLogMm = MCContextMenuManager
+					.create(allFlagsLogTable.getManager().getViewer().getControl());
 			ColumnMenusFactory.addDefaultMenus(allFlagsLogTable.getManager(), flagsLogMm);
 			flagsLogMm.add(allFlagsLogFilter.getShowFilterAction());
 			flagsLogMm.add(allFlagsLogFilter.getShowSearchAction());

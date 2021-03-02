@@ -57,6 +57,7 @@ import org.openjdk.jmc.common.item.IItem;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
 import org.openjdk.jmc.common.item.IMemberAccessor;
+import org.openjdk.jmc.common.item.ItemCollectionToolkit;
 import org.openjdk.jmc.common.item.ItemToolkit;
 import org.openjdk.jmc.common.unit.ContentType;
 import org.openjdk.jmc.common.unit.IQuantity;
@@ -65,7 +66,6 @@ import org.openjdk.jmc.common.unit.LinearKindOfQuantity;
 import org.openjdk.jmc.common.util.StateToolkit;
 import org.openjdk.jmc.flightrecorder.ui.FlightRecorderUI;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.DataPageToolkit;
 import org.openjdk.jmc.flightrecorder.ui.common.FilterComponent;
@@ -146,6 +146,7 @@ class ItemListAndChart {
 			String combinedId = entry.getKey();
 			IAttribute<?> a = entry.getValue();
 			ContentType<?> contentType = a.getContentType();
+			@SuppressWarnings("deprecation")
 			IMemberAccessor<?, IItem> accessor = ItemToolkit.accessor(a);
 			itemListBuilder.addColumn(combinedId, a.getName(), a.getDescription(),
 					contentType instanceof LinearKindOfQuantity, accessor);

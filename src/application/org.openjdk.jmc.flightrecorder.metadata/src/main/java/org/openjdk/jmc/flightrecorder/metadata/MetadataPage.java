@@ -39,6 +39,7 @@ import java.util.stream.Stream;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.ResourceLocator;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.TreePath;
@@ -50,8 +51,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
-import org.eclipse.ui.plugin.AbstractUIPlugin;
-
 import org.openjdk.jmc.common.IState;
 import org.openjdk.jmc.common.IWritableState;
 import org.openjdk.jmc.common.item.IItemIterable;
@@ -60,7 +59,6 @@ import org.openjdk.jmc.flightrecorder.ui.IDisplayablePage;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
 import org.openjdk.jmc.flightrecorder.ui.IPageDefinition;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
 import org.openjdk.jmc.flightrecorder.ui.common.DataPageToolkit;
@@ -189,8 +187,7 @@ public class MetadataPage extends AbstractDataPage {
 			tableFilter.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).create());
 
 			// FIXME: Would like the event types tree here, but still in one table
-			viewer.setInput(buildTree(
-					ItemCollectionToolkit.stream(getDataSource().getItems()).map(IItemIterable::getType).distinct()));
+			viewer.setInput(buildTree(getDataSource().getItems().stream().map(IItemIterable::getType).distinct()));
 
 			viewer.setSelection(selection);
 			if (treeExpansion != null) {
@@ -234,7 +231,7 @@ public class MetadataPage extends AbstractDataPage {
 
 		@Override
 		public ImageDescriptor getImageDescriptor(IState state) {
-			return AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, ICON);
+			return ResourceLocator.imageDescriptorFromBundle(PLUGIN_ID, ICON).orElse(null);
 		}
 
 		@Override

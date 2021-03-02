@@ -32,9 +32,12 @@
  */
 package org.openjdk.jmc.rjmx.test;
 
+import java.io.IOException;
+
 import org.junit.After;
 import org.junit.Before;
-
+import org.openjdk.jmc.rjmx.IConnectionDescriptor;
+import org.openjdk.jmc.rjmx.IServerDescriptor;
 import org.openjdk.jmc.rjmx.IServerHandle;
 import org.openjdk.jmc.rjmx.internal.ServerHandle;
 
@@ -44,8 +47,20 @@ public abstract class ServerHandleTestCase extends RjmxTestCase {
 
 	@Before
 	public void setUp() throws Exception {
-		defaultServer = new ServerHandle(LocalRJMXTestToolkit.createDefaultDescriptor());
+		defaultServer = new ServerHandle(
+				deriveServerDescriptor(RjmxTestCase.getDefaultConnectionDescriptor(),
+						RjmxTestCase.createDefaultServerDesciptor()),
+				LocalRJMXTestToolkit.createDefaultDescriptor(), null);
 		alternativeServer = IServerHandle.create(LocalRJMXTestToolkit.createAlternativeDescriptor());
+	}
+
+	private IServerDescriptor deriveServerDescriptor(
+		IConnectionDescriptor connectionDescriptor, IServerDescriptor defaultDescriptor) {
+		try {
+			return RjmxTestCase.createDefaultServerDesciptor(connectionDescriptor);
+		} catch (IOException e) {
+			return defaultDescriptor;
+		}
 	}
 
 	@After

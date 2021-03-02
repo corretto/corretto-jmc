@@ -81,6 +81,7 @@ import org.openjdk.jmc.common.item.IItemFilter;
 import org.openjdk.jmc.common.item.IItemIterable;
 import org.openjdk.jmc.common.item.IMemberAccessor;
 import org.openjdk.jmc.common.item.IType;
+import org.openjdk.jmc.common.item.ItemCollectionToolkit;
 import org.openjdk.jmc.common.unit.ContentType;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
@@ -125,6 +126,7 @@ public class JfrPropertySheet extends Page implements IPropertySheetPage {
 	private static final Object TOO_MANY_VALUES = new Object();
 	private static final PropertySheetRow CALCULATING = new PropertySheetRow(null, null);
 	private static Set<IType<?>> selectedTypes = Collections.emptySet();
+
 	private static class PropertySheetRowSelection extends FlavoredSelectionBase {
 
 		private final PropertySheetRow row;
@@ -220,7 +222,7 @@ public class JfrPropertySheet extends Page implements IPropertySheetPage {
 					if (relatedProperties != null) {
 						// Collect values from items related to selection (only items of types that has the attribute), and add as filter
 						PropertySheetRow av = buildProperty(dstAttribute,
-								ItemCollectionToolkit.stream(itemsRelatedToSelection)
+								itemsRelatedToSelection.stream()
 										.filter(is -> dstAttribute.getAccessor(is.getType()) != null).iterator(),
 								Integer.MAX_VALUE);
 						if (av != null) {
@@ -322,8 +324,8 @@ public class JfrPropertySheet extends Page implements IPropertySheetPage {
 					} else if (value instanceof Object[]) {
 						return limitedDeepToString((Object[]) value, this::getValueString);
 					} else if (value instanceof Collection<?>) {
-						selectedTypes = new HashSet<IType<?>>((Collection<IType<?>>) value)
-							.stream().collect(Collectors.toSet());
+						selectedTypes = new HashSet<IType<?>>((Collection<IType<?>>) value).stream()
+								.collect(Collectors.toSet());
 						return limitedDeepToString(((Collection<?>) value).toArray(), this::getValueString);
 					}
 					return TypeHandling.getValueString(value);
@@ -344,10 +346,8 @@ public class JfrPropertySheet extends Page implements IPropertySheetPage {
 		if (value instanceof IType<?>) {
 			selectedTypes = new HashSet<IType<?>>();
 			selectedTypes.add((IType<?>) value);
-		}
-		else if (value instanceof Collection<?>) {
-			selectedTypes = new HashSet<IType<?>>((Collection<IType<?>>) value)
-					.stream().collect(Collectors.toSet());
+		} else if (value instanceof Collection<?>) {
+			selectedTypes = new HashSet<IType<?>>((Collection<IType<?>>) value).stream().collect(Collectors.toSet());
 		}
 	}
 
@@ -551,6 +551,7 @@ public class JfrPropertySheet extends Page implements IPropertySheetPage {
 			return Stream.empty();
 		} else {
 			IItemIterable single = iterables.next();
+			@SuppressWarnings("deprecation")
 			List<IAttribute<?>> attributes = single.getType().getAttributes();
 			if (iterables.hasNext()) {
 				attributes = new ArrayList<>(attributes); // modifiable copy
@@ -584,8 +585,7 @@ public class JfrPropertySheet extends Page implements IPropertySheetPage {
 		if (dstAttributes != null && !dstAttributes.isEmpty()) {
 			commonAttributes = commonAttributes(srcItems.iterator()).filter(a -> dstAttributes.contains(a));
 		} else {
-			Stream<? extends IItemIterable> items = Stream.concat(ItemCollectionToolkit.stream(srcItems),
-					ItemCollectionToolkit.stream(dstItems));
+			Stream<? extends IItemIterable> items = Stream.concat(srcItems.stream(), dstItems.stream());
 			commonAttributes = commonAttributes(items.iterator());
 		}
 		Stream<IAttribute<?>> persistableAttributes = DataPageToolkit.getPersistableAttributes(commonAttributes)

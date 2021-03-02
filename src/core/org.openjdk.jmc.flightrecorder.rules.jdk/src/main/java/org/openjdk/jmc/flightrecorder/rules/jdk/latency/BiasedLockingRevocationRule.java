@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  *
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -35,7 +35,6 @@ package org.openjdk.jmc.flightrecorder.rules.jdk.latency;
 import static org.openjdk.jmc.common.unit.UnitLookup.NUMBER;
 import static org.openjdk.jmc.common.unit.UnitLookup.NUMBER_UNITY;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,6 +53,7 @@ import java.util.logging.Logger;
 
 import org.openjdk.jmc.common.IMCType;
 import org.openjdk.jmc.common.item.Aggregators;
+import org.openjdk.jmc.common.item.IAggregator;
 import org.openjdk.jmc.common.item.IAttribute;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
@@ -67,8 +67,13 @@ import org.openjdk.jmc.common.util.TypedPreference;
 import org.openjdk.jmc.flightrecorder.jdk.JdkAttributes;
 import org.openjdk.jmc.flightrecorder.jdk.JdkFilters;
 import org.openjdk.jmc.flightrecorder.jdk.JdkTypeIDs;
+import org.openjdk.jmc.flightrecorder.rules.IResult;
+import org.openjdk.jmc.flightrecorder.rules.IResultValueProvider;
 import org.openjdk.jmc.flightrecorder.rules.IRule;
-import org.openjdk.jmc.flightrecorder.rules.Result;
+import org.openjdk.jmc.flightrecorder.rules.ResultBuilder;
+import org.openjdk.jmc.flightrecorder.rules.Severity;
+import org.openjdk.jmc.flightrecorder.rules.TypedCollectionResult;
+import org.openjdk.jmc.flightrecorder.rules.TypedResult;
 import org.openjdk.jmc.flightrecorder.rules.jdk.messages.internal.Messages;
 import org.openjdk.jmc.flightrecorder.rules.jdk.util.ClassEntry;
 import org.openjdk.jmc.flightrecorder.rules.jdk.util.ColumnInfo;
@@ -78,7 +83,7 @@ import org.openjdk.jmc.flightrecorder.rules.jdk.util.ItemResultSetFactory;
 import org.openjdk.jmc.flightrecorder.rules.util.JfrRuleTopics;
 import org.openjdk.jmc.flightrecorder.rules.util.RulesToolkit;
 import org.openjdk.jmc.flightrecorder.rules.util.RulesToolkit.EventAvailability;
-import org.owasp.encoder.Encode;
+import org.openjdk.jmc.flightrecorder.rules.util.RulesToolkit.RequiredEventsBuilder;
 
 /**
  * This rule is making use of the new dedicated biased locking revocation events available in JDK
@@ -86,6 +91,8 @@ import org.owasp.encoder.Encode;
  * been more than 15 revocations (can be configured) for a particular class.
  */
 public final class BiasedLockingRevocationRule implements IRule {
+
+	private static final String RESULT_ID = "biasedLockingRevocation"; //$NON-NLS-1$
 	public static final TypedPreference<IQuantity> WARNING_LIMIT = new TypedPreference<>(
 			"biasedRevocation.warning.limit", //$NON-NLS-1$
 			Messages.getString(Messages.BiasedLockingRevocationRule_CONFIG_WARNING_LIMIT),
@@ -106,17 +113,25 @@ public final class BiasedLockingRevocationRule implements IRule {
 	private static final List<TypedPreference<?>> CONFIG_ATTRIBUTES = Arrays.<TypedPreference<?>> asList(WARNING_LIMIT,
 			MAX_NUMBER_OF_CLASSES_TO_REPORT, FILTERED_CLASSES);
 
-	private Result getResult(IItemCollection items, IPreferenceValueProvider valueProvider) {
-		EventAvailability eventAvailability = RulesToolkit.getEventAvailability(items,
-				JdkTypeIDs.BIASED_LOCK_CLASS_REVOCATION);
-		if (eventAvailability == EventAvailability.UNKNOWN || eventAvailability == EventAvailability.DISABLED) {
-			return RulesToolkit.getEventAvailabilityResult(this, items, eventAvailability,
-					JdkTypeIDs.BIASED_LOCK_CLASS_REVOCATION);
-		}
+	public static final TypedCollectionResult<IMCType> REVOKED_TYPES = new TypedCollectionResult<>("revokedClasses", //$NON-NLS-1$
+			"Revoked Classes", "Revoked Classes.", UnitLookup.CLASS, IMCType.class);
+	public static final TypedCollectionResult<ClassEntry> REVOCATION_CLASSES = new TypedCollectionResult<>(
+			"revocationClasses", "Revocation Classes", "Revocation Classes", ClassEntry.CLASS_ENTRY, ClassEntry.class); //$NON-NLS-1$
+	public static final TypedCollectionResult<String> FILTERED_TYPES = new TypedCollectionResult<>("filteredTypes", //$NON-NLS-1$
+			"Filtered Types", "Types that were filtered out.", UnitLookup.PLAIN_TEXT, String.class);
 
+	private static final Collection<TypedResult<?>> RESULT_ATTRIBUTES = Arrays
+			.<TypedResult<?>> asList(TypedResult.SCORE, REVOKED_TYPES, REVOCATION_CLASSES, FILTERED_TYPES);
+
+	private static final Map<String, EventAvailability> REQUIRED_EVENTS = RequiredEventsBuilder.create()
+			.addEventType(JdkTypeIDs.BIASED_LOCK_CLASS_REVOCATION, EventAvailability.ENABLED).build();
+
+	private IResult getResult(
+		IItemCollection items, IPreferenceValueProvider valueProvider, IResultValueProvider resultProvider) {
 		IItemCollection revokationEvents = items.apply(JdkFilters.BIASED_LOCKING_REVOCATIONS); // $NON-NLS-1$
 		if (!revokationEvents.hasItems()) {
-			return new Result(this, 0, Messages.getString(Messages.BiasedLockingRevocationPauseRule_TEXT_OK));
+			return ResultBuilder.createFor(this, valueProvider).setSeverity(Severity.OK)
+					.setSummary(Messages.getString(Messages.BiasedLockingRevocationPauseRule_TEXT_OK)).build();
 		}
 
 		Set<String> filteredTypes = getFilteredTypes(valueProvider.getPreferenceValue(FILTERED_CLASSES));
@@ -124,28 +139,21 @@ public final class BiasedLockingRevocationRule implements IRule {
 		IItemCollection revokedClassesEvents = revokationEvents
 				.apply(ItemFilters.and(ItemFilters.hasAttribute(JdkAttributes.BIASED_REVOCATION_CLASS),
 						ItemFilters.equals(JdkAttributes.BIASED_REVOCATION_DISABLE_BIASING, Boolean.TRUE)));
-		Set<IMCType> revokedTypes = filter(filteredTypes,
-				revokedClassesEvents.getAggregate(Aggregators.distinct(JdkAttributes.BIASED_REVOCATION_CLASS)));
+		Set<IMCType> revokedTypes = filter(filteredTypes, revokedClassesEvents.getAggregate(
+				(IAggregator<Set<IMCType>, ?>) Aggregators.distinct(JdkAttributes.BIASED_REVOCATION_CLASS)));
 
-		StringBuilder shortMessage = new StringBuilder();
-		StringBuilder longMessage = new StringBuilder();
+		StringBuilder summary = new StringBuilder();
+		StringBuilder explanation = new StringBuilder();
 
 		float totalScore = 0;
 
 		if (!revokedTypes.isEmpty()) {
 			totalScore = 25; // Base penalty for having fully revoked types not filtered out.
 			totalScore += RulesToolkit.mapExp(revokedTypes.size(), 25, 7, 20); // Up to 25 more points if you have plenty of revoked types.
-			shortMessage.append(Messages.getString(Messages.BiasedLockingRevocationRule_TEXT_REVOKED_CLASSES_FOUND));
-			shortMessage.append(" "); //$NON-NLS-1$
-			longMessage
+			summary.append(Messages.getString(Messages.BiasedLockingRevocationRule_TEXT_REVOKED_CLASSES_FOUND));
+			summary.append(" "); //$NON-NLS-1$
+			explanation
 					.append(Messages.getString(Messages.BiasedLockingRevocationRule_TEXT_REVOKED_CLASSES_FOUND_LONG));
-			longMessage.append("<p><ul>"); //$NON-NLS-1$
-			for (IMCType offender : revokedTypes) {
-				longMessage.append("<li>"); //$NON-NLS-1$
-				longMessage.append(Encode.forHtml(offender.toString()));
-				longMessage.append("</li>"); //$NON-NLS-1$
-			}
-			longMessage.append("</ul></p>"); //$NON-NLS-1$
 		}
 		int warningLimit = (int) valueProvider.getPreferenceValue(WARNING_LIMIT).longValue();
 
@@ -161,35 +169,31 @@ public final class BiasedLockingRevocationRule implements IRule {
 		totalScore += calculateRevocationCountScore(revocationClasses);
 
 		Collections.sort(revocationClasses);
-
+		List<ClassEntry> filteredRevocationClasses = new ArrayList<>();
 		if (revocationClasses.size() > 0) {
 			int maxClasses = (int) valueProvider.getPreferenceValue(MAX_NUMBER_OF_CLASSES_TO_REPORT).longValue();
-			shortMessage
-					.append(Messages.getString(Messages.BiasedLockingRevocationRule_TEXT_REVOKE_LIMIT_CLASSES_FOUND));
-			longMessage.append(MessageFormat.format(
-					Messages.getString(Messages.BiasedLockingRevocationRule_TEXT_REVOKE_LIMIT_CLASSES_FOUND_LONG),
-					warningLimit));
-			longMessage.append("<p><ul>"); //$NON-NLS-1$
+			summary.append(Messages.getString(Messages.BiasedLockingRevocationRule_TEXT_REVOKE_LIMIT_CLASSES_FOUND));
+			explanation.append(
+					Messages.getString(Messages.BiasedLockingRevocationRule_TEXT_REVOKE_LIMIT_CLASSES_FOUND_LONG));
 			int classLimit = Math.min(revocationClasses.size(), maxClasses);
 			for (int i = 0; i < classLimit; i++) {
 				ClassEntry classEntry = revocationClasses.get(i);
-				if (classEntry.getCount() < warningLimit) {
+				filteredRevocationClasses.add(classEntry);
+				if (classEntry.getCount().longValue() < warningLimit) {
 					break;
 				}
-				longMessage.append("<li>"); //$NON-NLS-1$
-				longMessage.append(Encode.forHtml(classEntry.toString()));
-				longMessage.append("</li>"); //$NON-NLS-1$
 			}
-			longMessage.append("</ul></p>"); //$NON-NLS-1$
 		}
 		if (totalScore == 0) {
-			return new Result(this, 0, Messages.getString(Messages.BiasedLockingRevocationRule_TEXT_OK));
+			return ResultBuilder.createFor(this, valueProvider).setSeverity(Severity.OK)
+					.setSummary(Messages.getString(Messages.BiasedLockingRevocationPauseRule_TEXT_OK)).build();
 		} else {
-			longMessage
-					.append(MessageFormat.format(Messages.getString(Messages.BiasedLockingRevocationRule_TEXT_EPILOGUE),
-							Encode.forHtml(String.valueOf(filteredTypes))));
+			explanation.append(Messages.getString(Messages.BiasedLockingRevocationRule_TEXT_EPILOGUE));
 		}
-		return new Result(this, totalScore, shortMessage.toString(), longMessage.toString());
+		return ResultBuilder.createFor(this, valueProvider).setSeverity(Severity.get(totalScore))
+				.setSummary(summary.toString()).setExplanation(explanation.toString())
+				.addResult(REVOKED_TYPES, revokedTypes).addResult(REVOCATION_CLASSES, filteredRevocationClasses)
+				.addResult(FILTERED_TYPES, filteredTypes).build();
 	}
 
 	private int calculateRevocationCountScore(List<ClassEntry> offendingClasses) {
@@ -197,7 +201,7 @@ public final class BiasedLockingRevocationRule implements IRule {
 		for (ClassEntry entry : offendingClasses) {
 			// Can get maximum the base score for a full revocation if there are plenty of
 			// revocation events for a single class.
-			score = Math.max(Math.min(entry.getCount() / 2, 25), score);
+			score = (int) Math.max(Math.min(entry.getCount().longValue() / 2, 25), score);
 		}
 		return score;
 	}
@@ -225,7 +229,7 @@ public final class BiasedLockingRevocationRule implements IRule {
 			ClassEntry mergedEntry = merged.get(entry.getKey());
 			if (mergedEntry != null) {
 				merged.put(entry.getKey(),
-						new ClassEntry(entry.getKey(), entry.getValue().getCount() + mergedEntry.getCount()));
+						new ClassEntry(entry.getKey(), entry.getValue().getCount().add(mergedEntry.getCount())));
 			} else {
 				putIfNotInFiltered(filteredTypes, revokedTypes, merged, entry);
 			}
@@ -260,7 +264,7 @@ public final class BiasedLockingRevocationRule implements IRule {
 				IQuantity countObject = (IQuantity) resultSet.getValue(countColumn.getColumn());
 				IMCType type = (IMCType) resultSet.getValue(classColumn.getColumn());
 				if (countObject != null && type != null) {
-					offendingClasses.put(type, new ClassEntry(type, (int) countObject.longValue()));
+					offendingClasses.put(type, new ClassEntry(type, countObject));
 
 				}
 			} catch (ItemResultSetException e) {
@@ -293,11 +297,13 @@ public final class BiasedLockingRevocationRule implements IRule {
 	}
 
 	@Override
-	public RunnableFuture<Result> evaluate(final IItemCollection items, final IPreferenceValueProvider valueProvider) {
-		FutureTask<Result> evaluationTask = new FutureTask<>(new Callable<Result>() {
+	public RunnableFuture<IResult> createEvaluation(
+		final IItemCollection items, final IPreferenceValueProvider valueProvider,
+		final IResultValueProvider resultProvider) {
+		FutureTask<IResult> evaluationTask = new FutureTask<>(new Callable<IResult>() {
 			@Override
-			public Result call() throws Exception {
-				return getResult(items, valueProvider);
+			public IResult call() throws Exception {
+				return getResult(items, valueProvider, resultProvider);
 			}
 		});
 		return evaluationTask;
@@ -310,7 +316,7 @@ public final class BiasedLockingRevocationRule implements IRule {
 
 	@Override
 	public String getId() {
-		return "biasedLockingRevocation"; //$NON-NLS-1$
+		return RESULT_ID;
 	}
 
 	@Override
@@ -320,6 +326,16 @@ public final class BiasedLockingRevocationRule implements IRule {
 
 	@Override
 	public String getTopic() {
-		return JfrRuleTopics.BIASED_LOCKING_TOPIC;
+		return JfrRuleTopics.BIASED_LOCKING;
+	}
+
+	@Override
+	public Map<String, EventAvailability> getRequiredEvents() {
+		return REQUIRED_EVENTS;
+	}
+
+	@Override
+	public Collection<TypedResult<?>> getResults() {
+		return RESULT_ATTRIBUTES;
 	}
 }

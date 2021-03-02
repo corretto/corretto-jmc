@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  *
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -39,6 +39,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.openjdk.jmc.common.collection.FastAccessNumberMap;
 import org.openjdk.jmc.common.unit.ContentType;
@@ -114,9 +116,6 @@ class TypeManager {
 			subSink.addEvent(reusableStruct);
 		}
 	}
-
-	// NOTE: Using constant pool id as identifier.
-	private final Map<Long, StructContentType<Object[]>> STRUCT_TYPES = new HashMap<>();
 
 	private class TypeEntry {
 		private static final String STRUCT_TYPE_CLASS = "java.lang.Class"; //$NON-NLS-1$
@@ -222,15 +221,21 @@ class TypeManager {
 			case STRUCT_TYPE_PACKAGE_2:
 				return new ReflectiveReader(JfrJavaPackage.class, fieldCount, UnitLookup.PACKAGE);
 			default:
-				synchronized (STRUCT_TYPES) {
-					StructContentType<Object[]> structType = STRUCT_TYPES.get(element.classId);
-					if (structType == null) {
-						structType = new StructContentType<>(element.typeIdentifier, element.label,
-								element.description);
-						STRUCT_TYPES.put(element.classId, structType);
-					}
-					return new StructReader(structType, fieldCount);
+				return createDefaultStructReader(fieldCount);
+			}
+		}
+
+		private AbstractStructReader createDefaultStructReader(int fieldCount) {
+			synchronized (structTypes) {
+				StructContentType<Object[]> structType = structTypes.get(element.classId);
+				if (structType == null) {
+					// Note that these struct types won't have localized names - so unless there really is a label
+					// set, we don't really care and set label to identifier.
+					structType = new StructContentType<>(element.typeIdentifier,
+							element.label != null ? element.label : element.typeIdentifier, element.description);
+					structTypes.put(element.classId, structType);
 				}
+				return new StructReader(structType, fieldCount);
 			}
 		}
 
@@ -264,15 +269,7 @@ class TypeManager {
 			case STRUCT_TYPE_PACKAGE:
 				return new ReflectiveReader(JfrJavaPackage.class, fieldCount, UnitLookup.PACKAGE);
 			default:
-				synchronized (STRUCT_TYPES) {
-					StructContentType<Object[]> structType = STRUCT_TYPES.get(element.classId);
-					if (structType == null) {
-						structType = new StructContentType<>(element.typeIdentifier, element.label,
-								element.description);
-						STRUCT_TYPES.put(element.classId, structType);
-					}
-					return new StructReader(structType, fieldCount);
-				}
+				return createDefaultStructReader(fieldCount);
 			}
 		}
 
@@ -372,6 +369,8 @@ class TypeManager {
 		}
 	}
 
+	// NOTE: Using constant pool id as identifier.
+	private final Map<Long, StructContentType<Object[]>> structTypes = new HashMap<>();
 	private final FastAccessNumberMap<TypeEntry> otherTypes = new FastAccessNumberMap<>();
 	private final FastAccessNumberMap<EventTypeEntry> eventTypes = new FastAccessNumberMap<>();
 	private final ChunkStructure header;
@@ -401,9 +400,12 @@ class TypeManager {
 	void readEvent(long typeId, IDataInput input) throws InvalidJfrFileException, IOException {
 		EventTypeEntry entry = eventTypes.get(typeId);
 		if (entry == null) {
-			throw new InvalidJfrFileException("Event type with id " + typeId + " was not declared"); //$NON-NLS-1$ //$NON-NLS-2$
+			// We don't need to do anything here, as the chunk loader will skip to the next event for us.
+			Logger.getLogger(getClass().getName()).log(Level.WARNING,
+					"Event type with id " + typeId + " was not declared"); //$NON-NLS-1$ //$NON-NLS-2$
+		} else {
+			entry.readEvent(input);
 		}
-		entry.readEvent(input);
 	}
 
 	void readConstants(long typeId, IDataInput input, int constantCount) throws InvalidJfrFileException, IOException {
@@ -451,13 +453,16 @@ class TypeManager {
 			if (JfrInternalConstants.TYPE_IDENTIFIER_VALUE_INTERPRETATION.equals(valueType)) {
 				reader = new TypeIdentifierReader(typeIdentifier, f.unsigned);
 			} else {
-				IUnit unit = UnitLookup.getUnitOrNull(valueType);
-				/*
-				 * FIXME: Currently we convert all numbers to quantities. This might not be ideal,
-				 * for example for thread IDs. See multiple notes referring to this method in
-				 * StructTypes.
-				 */
-				reader = new QuantityReader(typeIdentifier, unit == null ? UnitLookup.NUMBER_UNITY : unit, f.unsigned);
+				if (JfrInternalConstants.LINE_NUMBER_ID.equals(f.fieldIdentifier)
+						|| JfrInternalConstants.BCI_ID.equals(f.fieldIdentifier)
+						|| JfrInternalConstants.MODIFIERS_ID.equals(f.fieldIdentifier)
+						|| JfrInternalConstants.JAVA_THREAD_ID_ID.equals(f.fieldIdentifier)) {
+					reader = new PrimitiveReader(typeIdentifier);
+				} else {
+					IUnit unit = UnitLookup.getUnitOrNull(valueType);
+					reader = new QuantityReader(typeIdentifier, unit == null ? UnitLookup.NUMBER_UNITY : unit,
+							f.unsigned);
+				}
 			}
 		}
 		if (f.isStoredInPool()) {

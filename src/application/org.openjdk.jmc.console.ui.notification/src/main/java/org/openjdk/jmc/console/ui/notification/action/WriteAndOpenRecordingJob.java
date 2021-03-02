@@ -42,11 +42,9 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.osgi.util.NLS;
-
 import org.openjdk.jmc.alert.AlertObject;
 import org.openjdk.jmc.alert.AlertPlugin;
 import org.openjdk.jmc.alert.NotificationUIToolkit;
-import org.openjdk.jmc.common.io.IOToolkit;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.console.ui.notification.NotificationPlugin;
 import org.openjdk.jmc.rjmx.RJMXPlugin;
@@ -121,11 +119,8 @@ public class WriteAndOpenRecordingJob extends Job {
 
 	private File writeFile(IProgressMonitor monitor, IRecordingDescriptor descriptor, IQuantity duration)
 			throws FlightRecorderException, IOException {
-		InputStream stream = service.openStream(descriptor, duration, false);
-		try {
+		try (InputStream stream = service.openStream(descriptor, duration, false)) {
 			return IDESupportToolkit.writeToUniqueFile(path, stream, monitor);
-		} finally {
-			IOToolkit.closeSilently(stream);
 		}
 	}
 }

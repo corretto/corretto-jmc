@@ -66,6 +66,7 @@ import org.openjdk.jmc.common.item.IAttribute;
 import org.openjdk.jmc.common.item.IItem;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
+import org.openjdk.jmc.common.item.ItemCollectionToolkit;
 import org.openjdk.jmc.common.item.ItemFilters;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
@@ -85,7 +86,6 @@ import org.openjdk.jmc.flightrecorder.ui.IDisplayablePage;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
 import org.openjdk.jmc.flightrecorder.ui.IPageDefinition;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
-import org.openjdk.jmc.flightrecorder.ui.ItemCollectionToolkit;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
 import org.openjdk.jmc.flightrecorder.ui.common.CompositeKeyAccessorFactory;
@@ -133,7 +133,7 @@ public class SocketIOPage extends AbstractDataPage {
 
 		@Override
 		public String[] getTopics(IState state) {
-			return new String[] {JfrRuleTopics.SOCKET_IO_TOPIC};
+			return new String[] {JfrRuleTopics.SOCKET_IO};
 		}
 
 		@Override
@@ -195,10 +195,10 @@ public class SocketIOPage extends AbstractDataPage {
 		LIST.addColumn(JdkAttributes.IO_SOCKET_READ_EOS);
 		LIST.addColumn(JdkAttributes.IO_TIMEOUT);
 
-		PERCENTILES.addSeries(PERCENTILE_READ_TIME, Messages.SocketIOPage_ROW_SOCKET_READ,
-				PERCENTILE_READ_COUNT, JdkAggregators.SOCKET_READ_COUNT.getName(), JdkTypeIDs.SOCKET_READ);
-		PERCENTILES.addSeries(PERCENTILE_WRITE_TIME, Messages.SocketIOPage_ROW_SOCKET_WRITE,
-				PERCENTILE_WRITE_COUNT, JdkAggregators.SOCKET_WRITE_COUNT.getName(), JdkTypeIDs.SOCKET_WRITE);
+		PERCENTILES.addSeries(PERCENTILE_READ_TIME, Messages.SocketIOPage_ROW_SOCKET_READ, PERCENTILE_READ_COUNT,
+				JdkAggregators.SOCKET_READ_COUNT.getName(), JdkTypeIDs.SOCKET_READ);
+		PERCENTILES.addSeries(PERCENTILE_WRITE_TIME, Messages.SocketIOPage_ROW_SOCKET_WRITE, PERCENTILE_WRITE_COUNT,
+				JdkAggregators.SOCKET_WRITE_COUNT.getName(), JdkTypeIDs.SOCKET_WRITE);
 	}
 
 	private enum HistogramType {
@@ -299,10 +299,11 @@ public class SocketIOPage extends AbstractDataPage {
 			t2.setText(Messages.PAGES_DURATIONS);
 			t2.setControl(durationParent);
 
-			IQuantity sizeMax = QuantitiesToolkit.maxPresent(socketItems.getAggregate(JdkAggregators.SOCKET_READ_LARGEST),
+			IQuantity sizeMax = QuantitiesToolkit.maxPresent(
+					socketItems.getAggregate(JdkAggregators.SOCKET_READ_LARGEST),
 					socketItems.getAggregate(JdkAggregators.SOCKET_WRITE_LARGEST));
 			// FIXME: Workaround to make max value included
-			sizeMax = sizeMax == null ? UnitLookup.BYTE.quantity(64): sizeMax.add(UnitLookup.BYTE.quantity(64));
+			sizeMax = sizeMax == null ? UnitLookup.BYTE.quantity(64) : sizeMax.add(UnitLookup.BYTE.quantity(64));
 			sizeChart = new XYChart(UnitLookup.BYTE.quantity(0), sizeMax, RendererToolkit.empty(), 180);
 			sizeChart.setVisibleRange(sizeRange.getStart(), sizeMax);
 			sizeChart.addVisibleRangeListener(range -> sizeRange = range);
@@ -313,8 +314,7 @@ public class SocketIOPage extends AbstractDataPage {
 			t3.setText(Messages.PAGES_SIZE);
 			t3.setControl(sizeCanvas);
 			DataPageToolkit.createChartTooltip(sizeCanvas);
-			DataPageToolkit.setChart(sizeCanvas, sizeChart, JdkAttributes.IO_SIZE,
-					pageContainer::showSelection);
+			DataPageToolkit.setChart(sizeCanvas, sizeChart, JdkAttributes.IO_SIZE, pageContainer::showSelection);
 			SelectionStoreActionToolkit.addSelectionStoreActions(pageContainer.getSelectionStore(), sizeChart,
 					JdkAttributes.IO_SIZE, Messages.SocketIOPage_SIZE_SELECTION, sizeCanvas.getContextMenu());
 
@@ -527,8 +527,8 @@ public class SocketIOPage extends AbstractDataPage {
 								JdkAggregators.SOCKET_READ_COUNT.getDescription(), readItems,
 								JdkAggregators.SOCKET_READ_COUNT, READ_COLOR));
 				sizeRows.add(DataPageToolkit.buildSizeHistogram(Messages.SocketIOPage_ROW_SOCKET_READ + hostCount,
-						JdkAggregators.SOCKET_READ_COUNT.getDescription(), readItems,
-						JdkAggregators.SOCKET_READ_COUNT, READ_COLOR, JdkAttributes.IO_SOCKET_BYTES_READ));
+						JdkAggregators.SOCKET_READ_COUNT.getDescription(), readItems, JdkAggregators.SOCKET_READ_COUNT,
+						READ_COLOR, JdkAttributes.IO_SOCKET_BYTES_READ));
 			}
 			IItemCollection writeItems = selectedItems.apply(JdkFilters.SOCKET_WRITE);
 			if (writeItems.hasItems()) {

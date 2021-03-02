@@ -212,6 +212,8 @@ public final class JdkAggregators {
 			or(BOOLEAN_FLAG, FLAG_VALUE_BOOLEAN), ItemFilters.equals(FLAG_NAME, "UseStringDeduplication")); //$NON-NLS-1$
 	public static final IAggregator<Boolean, ?> USE_G1_GC = filter("UseG1GC", null, //$NON-NLS-1$
 			or(BOOLEAN_FLAG, FLAG_VALUE_BOOLEAN), ItemFilters.equals(FLAG_NAME, "UseG1GC")); //$NON-NLS-1$
+	public static final IAggregator<Boolean, ?> USE_SHENANDOAH_GC = filter("UseShenandoahGC", null, //$NON-NLS-1$
+			or(BOOLEAN_FLAG, FLAG_VALUE_BOOLEAN), ItemFilters.equals(FLAG_NAME, "UseShenandoahGC")); //$NON-NLS-1$
 	public static final IAggregator<Boolean, ?> COMPACT_STRINGS = filter("CompactStrings", null, //$NON-NLS-1$
 			or(BOOLEAN_FLAG, FLAG_VALUE_BOOLEAN), ItemFilters.equals(FLAG_NAME, "CompactStrings")); //$NON-NLS-1$
 	public static final IAggregator<IQuantity, ?> LARGEST_MAX_HEAP_SIZE_FROM_FLAG = filter(
@@ -348,9 +350,6 @@ public final class JdkAggregators {
 			Messages.getString(Messages.AGGR_SWEEP_RECLAIMED_SUM),
 			Messages.getString(Messages.AGGR_SWEEP_RECLAIMED_SUM_DESC), JdkTypeIDs.SWEEP_CODE_CACHE,
 			JdkAttributes.SWEEP_METHOD_RECLAIMED);
-	public static final IAggregator<IQuantity, ?> FIRST_ITEM_START = Aggregators.min(JfrAttributes.START_TIME);
-	public static final IAggregator<IQuantity, ?> FIRST_ITEM_END = Aggregators.min(JfrAttributes.END_TIME);
-	public static final IAggregator<IQuantity, ?> LAST_ITEM_END = Aggregators.max(JfrAttributes.END_TIME);
 	public static final IAggregator<IQuantity, ?> LONGEST_EVENT = Aggregators.max(DURATION);
 	public static final IAggregator<IQuantity, ?> ITEM_COUNT = Aggregators
 			.count(Messages.getString(Messages.AGGR_ITEM_COUNT), Messages.getString(Messages.AGGR_ITEM_COUNT_DESC));
@@ -390,7 +389,8 @@ public final class JdkAggregators {
 			Messages.getString(Messages.AGGR_VM_OPERATION_COUNT_DESC), JdkFilters.VM_OPERATIONS);
 	public static final IAggregator<IQuantity, ?> VM_OPERATION_DURATION = Aggregators.sum(
 			Messages.getString(Messages.AGGR_VM_OPERATION_DURATION),
-			Messages.getString(Messages.AGGR_VM_OPERATION_DURATION_DESC), JfrAttributes.DURATION);
+			Messages.getString(Messages.AGGR_VM_OPERATION_DURATION_DESC), JdkTypeIDs.VM_OPERATIONS,
+			JfrAttributes.DURATION);
 
 	public static final IAggregator<IQuantity, ?> COMPILATIONS_COUNT = Aggregators.count(
 			Messages.getString(Messages.AGGR_COMPILATIONS_COUNT),

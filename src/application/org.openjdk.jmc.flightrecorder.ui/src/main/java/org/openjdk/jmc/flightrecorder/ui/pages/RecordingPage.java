@@ -97,7 +97,7 @@ public class RecordingPage extends AbstractDataPage {
 
 		@Override
 		public String[] getTopics(IState state) {
-			return new String[] {JfrRuleTopics.RECORDING_TOPIC};
+			return new String[] {JfrRuleTopics.RECORDING};
 		}
 
 		@Override
@@ -134,8 +134,8 @@ public class RecordingPage extends AbstractDataPage {
 					Messages.RecordingPage_RECORDING_EVENTS_START, Messages.RecordingPage_RECORDING_EVENT_START_DESC);
 			infoViewer.addAggregate(JdkAggregators.ITEM_COUNT);
 			infoViewer.addValueFunction(
-					ic -> UnitLookup.EPOCH_NS
-							.quantity(pageContainer.getRecordingRange().getEnd().clampedLongValueIn(UnitLookup.EPOCH_NS)),
+					ic -> UnitLookup.EPOCH_NS.quantity(
+							pageContainer.getRecordingRange().getEnd().clampedLongValueIn(UnitLookup.EPOCH_NS)),
 					Messages.RecordingPage_RECORDING_EVENTS_END, Messages.RecordingPage_RECORDING_EVENT_END_DESC);
 			infoViewer.addAggregate(JdkAggregators.DUMP_REASON);
 			infoViewer.addValueFunction(

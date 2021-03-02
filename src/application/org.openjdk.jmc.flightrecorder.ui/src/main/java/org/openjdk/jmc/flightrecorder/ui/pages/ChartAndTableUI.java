@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020 Oracle and/or its affiliates. All rights reserved.
  * 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -84,16 +84,17 @@ abstract class ChartAndTableUI implements IPageUI {
 	private static final String TABLE = "table"; //$NON-NLS-1$
 	private static final String CHART = "chart"; //$NON-NLS-1$
 	private static final String SELECTED = "selected"; //$NON-NLS-1$
-	private final IItemFilter pageFilter;
-	private final StreamModel model;
+	private static final int X_OFFSET = 180;
+	private IItemFilter pageFilter;
+	protected StreamModel model;
 	protected CheckboxTableViewer chartLegend;
-	protected final Form form;
-	protected final Composite chartContainer;
-	protected final ChartCanvas chartCanvas;
-	protected final FilterComponent tableFilterComponent;
-	protected final ItemHistogram table;
-	protected final SashForm sash;
-	private final IPageContainer pageContainer;
+	protected Form form;
+	protected Composite chartContainer;
+	protected ChartCanvas chartCanvas;
+	protected FilterComponent tableFilterComponent;
+	protected ItemHistogram table;
+	protected SashForm sash;
+	private IPageContainer pageContainer;
 	protected List<IAction> allChartSeriesActions;
 	private IItemCollection selectionItems;
 	private IRange<IQuantity> timeRange;
@@ -102,7 +103,15 @@ abstract class ChartAndTableUI implements IPageUI {
 
 	ChartAndTableUI(IItemFilter pageFilter, StreamModel model, Composite parent, FormToolkit toolkit,
 			IPageContainer pageContainer, IState state, String sectionTitle, IItemFilter tableFilter, Image icon,
-			FlavorSelectorState flavorSelectorState) {
+			FlavorSelectorState flavorSelectorState, IAttribute<?> classifier) {
+		init(pageFilter, model, parent, toolkit, pageContainer, state, sectionTitle, tableFilter, icon,
+				flavorSelectorState, classifier);
+	}
+
+	protected void init(
+		IItemFilter pageFilter, StreamModel model, Composite parent, FormToolkit toolkit, IPageContainer pageContainer,
+		IState state, String sectionTitle, IItemFilter tableFilter, Image icon, FlavorSelectorState flavorSelectorState,
+		IAttribute<?> classifier) {
 		this.pageFilter = pageFilter;
 		this.model = model;
 		this.pageContainer = pageContainer;
@@ -110,7 +119,7 @@ abstract class ChartAndTableUI implements IPageUI {
 		sash = new SashForm(form.getBody(), SWT.VERTICAL);
 		toolkit.adapt(sash);
 
-		table = buildHistogram(sash, state.getChild(TABLE));
+		table = buildHistogram(sash, state.getChild(TABLE), classifier);
 		MCContextMenuManager mm = MCContextMenuManager.create(table.getManager().getViewer().getControl());
 		ColumnMenusFactory.addDefaultMenus(table.getManager(), mm);
 		table.getManager().getViewer().addSelectionChangedListener(e -> buildChart());
@@ -139,7 +148,7 @@ abstract class ChartAndTableUI implements IPageUI {
 		PersistableSashForm.loadState(sash, state.getChild(SASH));
 		DataPageToolkit.createChartTimestampTooltip(chartCanvas);
 
-		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), 180);
+		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET);
 		DataPageToolkit.setChart(chartCanvas, chart, pageContainer::showSelection);
 		SelectionStoreActionToolkit.addSelectionStoreRangeActions(pageContainer.getSelectionStore(), chart,
 				JfrAttributes.LIFETIME, NLS.bind(Messages.ChartAndTableUI_TIMELINE_SELECTION, form.getText()),
@@ -182,6 +191,10 @@ abstract class ChartAndTableUI implements IPageUI {
 		}
 	}
 
+	public Form getComponent() {
+		return this.form;
+	}
+
 	private void onSetRange(Boolean useRange) {
 		IRange<IQuantity> range = useRange ? timeRange : pageContainer.getRecordingRange();
 		chart.setVisibleRange(range.getStart(), range.getEnd());
@@ -218,7 +231,7 @@ abstract class ChartAndTableUI implements IPageUI {
 		return action.isPresent() && action.get().isChecked();
 	}
 
-	protected abstract ItemHistogram buildHistogram(Composite parent, IState state);
+	protected abstract ItemHistogram buildHistogram(Composite parent, IState state, IAttribute<?> classifier);
 
 	protected abstract IXDataRenderer getChartRenderer(IItemCollection itemsInTable, HistogramSelection selection);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  *
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -36,8 +36,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.function.Predicate;
 
-import org.openjdk.jmc.common.IPredicate;
 import org.openjdk.jmc.common.item.IAggregator;
 import org.openjdk.jmc.common.item.IItem;
 import org.openjdk.jmc.common.item.IItemCollection;
@@ -45,6 +46,8 @@ import org.openjdk.jmc.common.item.IItemConsumer;
 import org.openjdk.jmc.common.item.IItemFilter;
 import org.openjdk.jmc.common.item.IItemIterable;
 import org.openjdk.jmc.common.item.IType;
+import org.openjdk.jmc.common.unit.IQuantity;
+import org.openjdk.jmc.common.unit.IRange;
 
 /**
  * Implementation helper class for handling a singular {@link IItem} as an {@link IItemCollection}.
@@ -70,6 +73,11 @@ final class SingleEntryItemCollection implements IItemCollection {
 		public IItemCollection apply(IItemFilter filter) {
 			return this;
 		}
+
+		@Override
+		public Set<IRange<IQuantity>> getUnfilteredTimeRanges() {
+			return null;
+		}
 	};
 
 	private static final IItemIterable NULLITERABLE = new IItemIterable() {
@@ -94,7 +102,7 @@ final class SingleEntryItemCollection implements IItemCollection {
 		}
 
 		@Override
-		public IItemIterable apply(IPredicate<IItem> predicate) {
+		public IItemIterable apply(Predicate<IItem> predicate) {
 			return null;
 		}
 	};
@@ -159,8 +167,8 @@ final class SingleEntryItemCollection implements IItemCollection {
 		}
 
 		@Override
-		public IItemIterable apply(IPredicate<IItem> predicate) {
-			if (predicate.evaluate(itemList.get(0))) {
+		public IItemIterable apply(Predicate<IItem> predicate) {
+			if (predicate.test(itemList.get(0))) {
 				return this;
 			}
 			return NULLITERABLE;
@@ -168,9 +176,11 @@ final class SingleEntryItemCollection implements IItemCollection {
 	}
 
 	private final IItem item;
+	private final Set<IRange<IQuantity>> chunkRanges;
 
-	SingleEntryItemCollection(IItem item) {
+	SingleEntryItemCollection(IItem item, Set<IRange<IQuantity>> chunkRanges) {
 		this.item = item;
+		this.chunkRanges = chunkRanges;
 	}
 
 	@Override
@@ -181,7 +191,7 @@ final class SingleEntryItemCollection implements IItemCollection {
 	@SuppressWarnings("unchecked")
 	@Override
 	public IItemCollection apply(IItemFilter filter) {
-		return filter.getPredicate((IType<IItem>) item.getType()).evaluate(item) ? this : NULLCOLLECTION;
+		return filter.getPredicate((IType<IItem>) item.getType()).test(item) ? this : NULLCOLLECTION;
 	}
 
 	@Override
@@ -216,5 +226,10 @@ final class SingleEntryItemCollection implements IItemCollection {
 	@Override
 	public boolean hasItems() {
 		return true;
+	}
+
+	@Override
+	public Set<IRange<IQuantity>> getUnfilteredTimeRanges() {
+		return chunkRanges;
 	}
 }
