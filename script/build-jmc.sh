@@ -35,8 +35,8 @@ set -o errexit
 build_dir="$1"
 # Build JMC core lib
 cd "$build_dir/core"
-mvn install
+mvn clean install
 
 # Build JMC app
 cd "$build_dir"
-mvn clean package
+mvn package
