@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--   
+   Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+   
+   DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   
+   The contents of this file are subject to the terms of either the Universal Permissive License 
+   v 1.0 as shown at http://oss.oracle.com/licenses/upl
+   
+   or the following license:
+   
+   Redistribution and use in source and binary forms, with or without modification, are permitted
+   provided that the following conditions are met:
+   
+   1. Redistributions of source code must retain the above copyright notice, this list of conditions
+   and the following disclaimer.
+   
+   2. Redistributions in binary form must reproduce the above copyright notice, this list of
+   conditions and the following disclaimer in the documentation and/or other materials provided with
+   the distribution.
+   
+   3. Neither the name of the copyright holder nor the names of its contributors may be used to
+   endorse or promote products derived from this software without specific prior written permission.
+   
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+   IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+   FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+   DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+   WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+<jfragent>
+	<!-- Global configuration options -->
+	<config>
+		<!-- This is the prefix to use when generating event class names. -->
+		<classprefix>__JFREvent</classprefix>
+		<!-- Will allow the recording of arrays and object parameters as Strings. 
+			This will cause toString to be called for array elements and objects other 
+			than strings, which in turn can cause trouble if the toString method is badly 
+			implemented. Use with care. -->
+		<allowtostring>true</allowtostring>
+		<!-- Allows converters to be used. See the org.openjdk.jmc.agent.converters 
+			package for more information. -->
+		<allowconverter>true</allowconverter>
+	</config>
+
+	<!-- Converter test event probes -->
+	<events>
+		<event id="demo.jfr.convertertest.String">
+			<label>ConverterEventString</label>
+			<description>Defined in the xml file and added by the agent. Should
+				transform the Gurka parameter to
+				String.
+			</description>
+			<path>demo/converterevents/</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printGurkaToString</name>
+				<descriptor>(Lorg/openjdk/jmc/agent/test/Gurka;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>String Gurka</name>
+						<description>The one and only converted Gurk-parameter
+						</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.test.GurkConverterString
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+		</event>
+		<event id="demo.jfr.convertertest.Int">
+			<label>ConverterEventInt</label>
+			<description>Defined in the xml file and added by the agent. Should
+				transform the Gurka parameter to an
+				int.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printGurkaToInt</name>
+				<descriptor>(Lorg/openjdk/jmc/agent/test/Gurka;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>Int Gurka</name>
+						<description>The one and only converted Gurk-parameter
+						</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.test.GurkConverterInt
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.convertertest.Long">
+			<label>ConverterEventLong</label>
+			<description>Defined in the xml file and added by the agent. Should
+				transform the Gurka parameter to a
+				long.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printGurkaToLong</name>
+				<descriptor>(Lorg/openjdk/jmc/agent/test/Gurka;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>Long Gurka</name>
+						<description>The one and only converted Gurk-parameter
+						</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.test.GurkConverterLong
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.convertertest.Float">
+			<label>ConverterEventFloat</label>
+			<description>Defined in the xml file and added by the agent. Should
+				transform the Gurka parameter to a
+				float.
+			</description>
+			<path>demo/converterevents</path>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printGurkaToFloat</name>
+				<descriptor>(Lorg/openjdk/jmc/agent/test/Gurka;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>Float Gurka</name>
+						<description>The one and only converted Gurk-parameter
+						</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.test.GurkConverterFloat
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.convertertest.Double">
+			<label>ConverterEventDouble</label>
+			<description>Defined in the xml file and added by the agent. Should
+				transform the Gurka parameter to a
+				double.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printGurkaToDouble</name>
+				<descriptor>(Lorg/openjdk/jmc/agent/test/Gurka;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>Double Gurka</name>
+						<description>The one and only converted Gurk-parameter
+						</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.test.GurkConverterDouble
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.convertertest.File">
+			<label>ConverterEventFile</label>
+			<description>Defined in the xml file and added by the agent. Should
+				transform the File parameter to a
+				String.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printFileToString</name>
+				<descriptor>(Ljava/io/File;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>Default File</name>
+						<description>The converted File-parameter</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.FileConverter
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.convertertest.URI">
+			<label>ConverterEventUri</label>
+			<description>Defined in the xml file and added by the agent. Should
+				transform the URI parameter to a
+				String using the standard toString
+				behaviour.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printUriToString</name>
+				<descriptor>(Ljava/net/URI;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>String URI</name>
+						<description>The converted URI-parameter</description>
+						<contenttype>None</contenttype>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.convertertest.ConverterEventNumber">
+			<label>ConverterEventNumber</label>
+			<description>Defined in the xml file and added by the agent. Should
+				transform the Number parameter to a
+				double.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printNumber</name>
+				<descriptor>(Ljava/lang/Number;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>Number</name>
+						<description>The converted Number-parameter</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.test.ConverterNumber
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>
+
+		<!-- Multi and custom converters -->
+		<event id="demo.jfr.convertertest.ConverterEventMultiCustomInt">
+			<label>ConverterEventMultiCustomInt</label>
+			<description>Testing picking the right method.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printIntMultiCustom</name>
+				<descriptor>(Lorg/openjdk/jmc/agent/test/Gurka;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>Number as Int</name>
+						<description>The converted Gurk-parameter</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.test.GurkMultiCustomConverter.convertCustomInt(Lorg/openjdk/jmc/agent/test/Gurka;)I
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.convertertest.ConverterEventMultiCustomDouble">
+			<label>ConverterEventMultiCustomDouble</label>
+			<description>Testing picking the right method.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printDoubleMultiCustom</name>
+				<descriptor>(Lorg/openjdk/jmc/agent/test/Gurka;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>Number as Double</name>
+						<description>The converted Gurk-parameter</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.test.GurkMultiCustomConverter.convertCustomDouble(Lorg/openjdk/jmc/agent/test/Gurka;)D
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.convertertest.ConverterEventMultiDefaultLong">
+			<label>ConverterEventMultiDefaultLong</label>
+			<description>Testing picking the right method.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printLongMultiDefault</name>
+				<descriptor>(Ljava/lang/Long;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>Long as int</name>
+						<description>The converted Long-parameter</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.test.GurkMultiDefaultConverter
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.convertertest.ConverterEventMultiDefaultDouble">
+			<label>ConverterEventMultiDefaultDouble</label>
+			<description>Testing picking the right method.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printDoubleMultiDefault</name>
+				<descriptor>(Ljava/lang/Double;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>Double as Int</name>
+						<description>The converted Double-parameter</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.test.GurkMultiDefaultConverter
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.convertertest.printThread">
+			<label>ConverterEventThread</label>
+			<description>Testing converting to thread.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printThread</name>
+				<descriptor>(Lorg/openjdk/jmc/agent/test/DoLittleContainer;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>DoLittleThread</name>
+						<description>The converted DoLittleContainer</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.test.DoLittleContainerThreadConverter
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>	
+		<event id="demo.jfr.convertertest.printClass">
+			<label>ConverterEventClass</label>
+			<description>Testing converting to class.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printClassGurka</name>
+				<descriptor>(Lorg/openjdk/jmc/agent/test/Gurka;)V</descriptor>
+				<parameters>
+					<parameter index="0">
+						<name>Gurk Class</name>
+						<description>The converted Gurka</description>
+						<contenttype>None</contenttype>
+						<converter>org.openjdk.jmc.agent.converters.test.ObjectConverterClass
+						</converter>
+					</parameter>
+				</parameters>
+			</method>
+			<location>WRAP</location>
+		</event>	
+
+		<!-- Converters for return values and fields -->
+		<event id="demo.jfr.convertertest.printReturnGurka">
+			<label>ConverterEventReturnGurka</label>
+			<description>Testing converting to class.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter
+			</class>
+			<method>
+				<name>printReturnGurka</name>
+				<descriptor>()Lorg/openjdk/jmc/agent/test/Gurka;</descriptor>
+				<returnvalue>
+					<description>The ID of the Gurka returned (double)</description>
+					<contenttype>None</contenttype>
+					<converter>org.openjdk.jmc.agent.converters.test.GurkConverterDouble
+					</converter>
+				</returnvalue>
+			</method>
+			<location>WRAP</location>
+		</event>
+		<event id="demo.jfr.convertertest.printInnerClassField">
+			<label>ConverterEventInnerClassField</label>
+			<description>Testing converting a field in a class.
+			</description>
+			<path>demo/converterevents</path>
+			<stacktrace>true</stacktrace>
+			<class>org.openjdk.jmc.agent.converters.test.InstrumentMeConverter$InnerClass
+			</class>
+			<method>
+				<name>instrumentationPoint</name>
+				<descriptor>()V</descriptor>
+			</method>
+			<fields>
+				<field>
+					<name>CurrentGurka</name>
+					<description>Capturing inner class field with complex type, transformed by converter to int
+					</description>
+					<expression>currentGurka</expression>
+					<converter>org.openjdk.jmc.agent.converters.test.GurkConverterDouble
+					</converter>
+				</field>
+			</fields>
+		</event>
+	</events>
+</jfragent>

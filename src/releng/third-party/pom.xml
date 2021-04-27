@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+   Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+
+   DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+
+   The contents of this file are subject to the terms of either the Universal Permissive License
+   v 1.0 as shown at http://oss.oracle.com/licenses/upl
+
+   or the following license:
+
+   Redistribution and use in source and binary forms, with or without modification, are permitted
+   provided that the following conditions are met:
+
+   1. Redistributions of source code must retain the above copyright notice, this list of conditions
+   and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright notice, this list of
+   conditions and the following disclaimer in the documentation and/or other materials provided with
+   the distribution.
+
+   3. Neither the name of the copyright holder nor the names of its contributors may be used to
+   endorse or promote products derived from this software without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+   IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+   FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+   DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+   WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.openjdk.jmc</groupId>
+	<artifactId>external-dependencies</artifactId>
+	<packaging>war</packaging>
+	<version>8.0.0-SNAPSHOT</version>
+
+	<properties>
+		<!-- Config -->
+		<spotless.config.path>${basedir}/../../configuration/ide/eclipse/formatting/formatting.xml</spotless.config.path>
+		<!-- Versions -->
+		<hdrhistogram.version>2.1.12</hdrhistogram.version>
+		<jakarta.activation.version>1.2.1</jakarta.activation.version>
+		<jakarta.mail.version>1.6.5</jakarta.mail.version>
+		<jemmy.version>2.0.0</jemmy.version>
+		<jetty-maven-plugin.version>9.4.33.v20201020</jetty-maven-plugin.version>
+		<lz4.version>1.7.1</lz4.version>
+		<maven-enforcer-plugin.version>3.0.0-M3</maven-enforcer-plugin.version>
+		<owasp.encoder.version>1.2.2</owasp.encoder.version>
+		<p2-maven-plugin.version>1.5.0</p2-maven-plugin.version>
+		<twitter4j.core.version>4.0.7</twitter4j.core.version>
+	</properties>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.reficio</groupId>
+				<artifactId>p2-maven-plugin</artifactId>
+				<version>${p2-maven-plugin.version}</version>
+				<executions>
+					<execution>
+						<id>default-cli</id>
+						<configuration>
+							<additionalArgs>-nouses</additionalArgs>
+							<pedantic>true</pedantic>
+							<artifacts>
+								<!-- specify third party non-OSGi dependencies here -->
+								<!-- groupId:artifactId:version -->
+								<artifact>
+									<id>org.twitter4j:twitter4j-core:${twitter4j.core.version}</id>
+								</artifact>
+								<artifact>
+									<id>com.sun.mail:jakarta.mail:${jakarta.mail.version}</id>
+									<override>true</override>
+									<instructions>
+										<Import-Package>*;resolution:=optional</Import-Package>
+										<Export-Package>*</Export-Package>
+									</instructions>
+								</artifact>
+								<artifact>
+									<id>com.sun.activation:jakarta.activation:${jakarta.activation.version}</id>
+								</artifact>
+								<artifact>
+									<id>org.owasp.encoder:encoder:${owasp.encoder.version}</id>
+								</artifact>
+								<artifact>
+									<id>org.lz4:lz4-java:${lz4.version}</id>
+									<override>true</override>
+									<instructions>
+										<Bundle-Name>org.lz4.lz4-java</Bundle-Name>
+										<Bundle-SymbolicName>org.lz4.lz4-java</Bundle-SymbolicName>
+									</instructions>
+								</artifact>
+								<artifact>
+									<id>org.hdrhistogram:HdrHistogram:${hdrhistogram.version}</id>
+								</artifact>
+								<artifact>
+									<id>org.adoptopenjdk:jemmy-awt-input:${jemmy.version}</id>
+								</artifact>
+								<artifact>
+									<id>org.adoptopenjdk:jemmy-browser:${jemmy.version}</id>
+								</artifact>
+								<artifact>
+									<id>org.adoptopenjdk:jemmy-core:${jemmy.version}</id>
+								</artifact>
+								<artifact>
+									<id>org.adoptopenjdk:jemmy-swt:${jemmy.version}</id>
+								</artifact>
+							</artifacts>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>${jetty-maven-plugin.version}</version>
+				<configuration>
+					<scanIntervalSeconds>60</scanIntervalSeconds>
+					<webAppSourceDirectory>${basedir}/target/repository/</webAppSourceDirectory>
+					<webApp>
+						<contextPath>/site</contextPath>
+					</webApp>
+					<httpConnector>
+						<port>8080</port>
+					</httpConnector>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>${maven-enforcer-plugin.version}</version>
+				<executions>
+					<execution>
+						<id>enforce-java</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireJavaVersion>
+									<version>[1.8.0-40,)</version>
+									<message>Building JMC requires Java 8 version JDK 1.8.0_40 or later</message>
+								</requireJavaVersion>
+							</rules>
+						</configuration>
+					</execution>
+					<execution>
+						<id>enforce-maven</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireMavenVersion>
+									<version>3.3.1</version>
+									<message>Building JMC requires at least Maven 3.3.1</message>
+								</requireMavenVersion>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>
