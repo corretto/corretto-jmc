@@ -52,6 +52,8 @@ build_target="local"
 
 JETTY_LOCAL_PORT=8080
 
+VERSION="$(cat version.txt)"
+
 if [[ $# -gt 0 ]]; then
   build_target="$1"
 fi
@@ -92,6 +94,47 @@ function start_p2_jetty_local() {
   popd
 }
 
+function repackage_artifact() {
+  # Repackage raw JMC artifacts and add top level directory
+  # org.openjdk.jmc-linux.gtk.x86_64.tar.gz
+  # org.openjdk.jmc-win32.win32.x86_64.zip
+  # org.openjdk.jmc-macosx.cocoa.x86_64.tar.gz
+
+  pushd $BUILD_DIR
+  for raw_artifact in *; do
+    case "$raw_artifact" in
+      *"linux"*)  OS="linux" ;;
+      *"win32"*)  OS="windows" ;;
+      *"macosx"*) OS="mac" ;;
+      *)          echo "Cannot recognize the OS platfor of artifact $raw_artifact" ;;
+    esac
+
+    case "$raw_artifact" in
+      *"x86_64"*)   ARCH="x64" ;;
+      *)            echo "Cannot recognize the architecture of artifact $raw_artifact" ;;
+    esac
+
+    if [ -z ${OS+x} ] | [ -z ${ARCH+x} ]; then
+      echo "Unable to repackage $raw_artifact"
+      exit 1
+    fi
+
+    new_artifact_name="amazon-corretto-jmc-$VERSION-$OS-$ARCH"
+    if [[ $raw_artifact == *"tar.gz" ]]; then
+      echo "Repackaging $raw_artifact as $new_artifact_name.tar.gz"
+      mkdir $new_artifact_name
+      tar xfz $raw_artifact -C $new_artifact_name
+      tar cfz "$new_artifact_name.tar.gz" $new_artifact_name
+    elif [[ $raw_artifact == *"zip" ]]; then
+      echo "Repackaging $raw_artifact as $new_artifact_name.zip"
+      unzip -q $raw_artifact -d $new_artifact_name
+      zip -rq "$new_artifact_name.zip" $new_artifact_name
+    fi
+    rm -rf $new_artifact_name $raw_artifact
+  done
+  popd
+}
+
 case "$build_target" in
   docker ) # docker build
     if ! hash $DOCKER; then
@@ -109,12 +152,14 @@ case "$build_target" in
     $DOCKER cp "$ROOT_DIR/script/build-jmc.sh" "$INSTANCE_NAME:/"
     $DOCKER exec "$INSTANCE_NAME" "/build-jmc.sh" "$docker_build_dir"
     copy_artifacts_from_docker "$INSTANCE_NAME"
+    repackage_artifact
     ;;
   local ) # local build
     mk_build_dir
     start_p2_jetty_local
     bash "$ROOT_DIR/script/build-jmc.sh" "$SRC_DIR"
     cp "$SRC_DIR/target/products/org.openjdk.jmc-"* "$BUILD_DIR"
+    repackage_artifact
     ;;
   clean ) # clearn artifacts
     rm -r "$BUILD_DIR"
